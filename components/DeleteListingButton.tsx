@@ -30,7 +30,7 @@ export function DeleteListingButton({ listingId }: Props) {
       type="button"
       onClick={handleClick}
       disabled={pending}
-      className="text-sm text-red-600 hover:text-red-800 disabled:opacity-50"
+      className="text-sm text-red-600 hover:text-red-800 disabled:opacity-50 dark:text-red-400 dark:hover:text-red-300"
     >
       {pending ? "Removing…" : "Remove"}
     </button>

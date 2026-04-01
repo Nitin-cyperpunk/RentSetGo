@@ -16,12 +16,12 @@ function EnlargedModal({ src, onClose }: { src: string; onClose: () => void }) {
           alt=""
           width={1200}
           height={800}
-          className="max-h-[80vh] w-full rounded-xl bg-zinc-100 object-contain shadow-2xl"
+          className="max-h-[80vh] w-full rounded-xl bg-zinc-100 object-contain shadow-2xl dark:bg-zinc-900"
           style={{ margin: "0 auto" }}
         />
         <button
           type="button"
-          className="absolute right-3 top-3 rounded-full bg-white/80 p-2 shadow hover:bg-white"
+          className="absolute right-3 top-3 rounded-full bg-white/80 p-2 shadow hover:bg-white dark:bg-zinc-800/90 dark:hover:bg-zinc-700"
           aria-label="Close enlarged image"
           onClick={onClose}
         >
@@ -50,7 +50,7 @@ export function PropertyImageGallery({ images, imageTitle }: Props) {
         {images.length > 0 ? (
           <>
             <div
-              className="group relative aspect-[16/10] cursor-zoom-in overflow-hidden rounded-xl shadow ring-1 ring-zinc-100"
+              className="group relative aspect-[16/10] cursor-zoom-in overflow-hidden rounded-xl shadow ring-1 ring-zinc-100 dark:ring-zinc-700"
               onClick={() => setEnlarged(images[0])}
               onKeyDown={(e) => {
                 if (e.key === "Enter") setEnlarged(images[0]);
@@ -76,7 +76,7 @@ export function PropertyImageGallery({ images, imageTitle }: Props) {
                 {images.slice(1, 6).map((src, i) => (
                   <div
                     key={`${src}-${i}`}
-                    className="relative h-[68px] min-w-0 max-w-[120px] flex-1 cursor-zoom-in overflow-hidden rounded-md border border-zinc-200 bg-zinc-100 shadow-sm aspect-[4/3]"
+                    className="relative h-[68px] min-w-0 max-w-[120px] flex-1 cursor-zoom-in overflow-hidden rounded-md border border-zinc-200 bg-zinc-100 shadow-sm aspect-[4/3] dark:border-zinc-600 dark:bg-zinc-800"
                     onClick={() => setEnlarged(src)}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") setEnlarged(src);
@@ -92,7 +92,7 @@ export function PropertyImageGallery({ images, imageTitle }: Props) {
             )}
           </>
         ) : (
-          <div className="flex aspect-[16/10] items-center justify-center rounded-xl border border-zinc-200 bg-zinc-100 text-base font-semibold text-zinc-400 shadow-inner">
+          <div className="flex aspect-[16/10] items-center justify-center rounded-xl border border-zinc-200 bg-zinc-100 text-base font-semibold text-zinc-400 shadow-inner dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-500">
             No photos
           </div>
         )}

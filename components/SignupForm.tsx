@@ -23,12 +23,15 @@ export function SignupForm() {
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
       {error && (
-        <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
+        <p
+          className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/50 dark:text-red-200"
+          role="alert"
+        >
           {error}
         </p>
       )}
       <div className="space-y-2">
-        <label htmlFor="name" className="text-sm font-medium text-zinc-700">
+        <label htmlFor="name" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
           Name
         </label>
         <input
@@ -36,12 +39,12 @@ export function SignupForm() {
           name="name"
           type="text"
           autoComplete="name"
-          className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 shadow-sm outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20"
+          className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 shadow-sm outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100"
           placeholder="Your name"
         />
       </div>
       <div className="space-y-2">
-        <label htmlFor="email" className="text-sm font-medium text-zinc-700">
+        <label htmlFor="email" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
           Email
         </label>
         <input
@@ -50,11 +53,11 @@ export function SignupForm() {
           type="email"
           autoComplete="email"
           required
-          className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 shadow-sm outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20"
+          className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 shadow-sm outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100"
         />
       </div>
       <div className="space-y-2">
-        <label htmlFor="phone" className="text-sm font-medium text-zinc-700">
+        <label htmlFor="phone" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
           Phone
         </label>
         <input
@@ -63,25 +66,25 @@ export function SignupForm() {
           type="tel"
           autoComplete="tel"
           required
-          className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 shadow-sm outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20"
+          className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 shadow-sm outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100"
         />
       </div>
       <div className="space-y-2">
-        <label htmlFor="role" className="text-sm font-medium text-zinc-700">
+        <label htmlFor="role" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
           Role
         </label>
         <select
           id="role"
           name="role"
           required
-          className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 shadow-sm outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20"
+          className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 shadow-sm outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100"
         >
           <option value="user">User</option>
           <option value="owner">Owner</option>
         </select>
       </div>
       <div className="space-y-2">
-        <label htmlFor="password" className="text-sm font-medium text-zinc-700">
+        <label htmlFor="password" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
           Password
         </label>
         <input
@@ -91,9 +94,9 @@ export function SignupForm() {
           autoComplete="new-password"
           required
           minLength={6}
-          className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 shadow-sm outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20"
+          className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 shadow-sm outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100"
         />
-        <p className="text-xs text-zinc-500">At least 6 characters.</p>
+        <p className="text-xs text-zinc-500 dark:text-zinc-400">At least 6 characters.</p>
       </div>
       <button
         type="submit"

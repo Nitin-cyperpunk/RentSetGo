@@ -38,18 +38,18 @@ export default async function MyPropertiesPage() {
   const nowIso = new Date().toISOString();
 
   return (
-    <div className="min-h-[calc(100vh-3.5rem)] bg-gradient-to-b from-zinc-100 to-zinc-50">
+    <div className="min-h-[calc(100vh-3.5rem)] bg-gradient-to-b from-zinc-100 to-zinc-50 dark:from-zinc-950 dark:to-zinc-900">
       <main className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <Link
               href="/owner/dashboard"
-              className="inline-flex items-center gap-1 text-sm font-medium text-emerald-800/80 hover:text-emerald-900"
+              className="inline-flex items-center gap-1 text-sm font-medium text-emerald-800/80 hover:text-emerald-900 dark:text-emerald-400 dark:hover:text-emerald-300"
             >
               <span aria-hidden>←</span> Dashboard
             </Link>
-            <h1 className="mt-3 text-3xl font-bold tracking-tight text-zinc-900">My properties</h1>
-            <p className="mt-1 text-sm text-zinc-600">Edit details, add photos, or remove a listing.</p>
+            <h1 className="mt-3 text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">My properties</h1>
+            <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">Edit details, add photos, or remove a listing.</p>
           </div>
           <Link
             href="/owner/add-property"
@@ -61,30 +61,30 @@ export default async function MyPropertiesPage() {
 
         {listError && (
           <div
-            className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-950"
+            className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-950 dark:border-red-900 dark:bg-red-950/40 dark:text-red-100"
             role="alert"
           >
             <p className="font-medium">Could not load listings.</p>
             <p className="mt-2">{listError}</p>
-            <p className="mt-2 text-red-900/90">
-              Add <code className="rounded bg-red-100/80 px-1">SELECT</code> policies on{" "}
-              <code className="rounded bg-red-100/80 px-1">properties</code> and{" "}
-              <code className="rounded bg-red-100/80 px-1">property_images</code> for your role, or fix RLS so owners
-              can read rows where <code className="rounded bg-red-100/80 px-1">owner_id = auth.uid()</code>.
+            <p className="mt-2 text-red-900/90 dark:text-red-200/90">
+              Add <code className="rounded bg-red-100/80 px-1 dark:bg-red-900/80">SELECT</code> policies on{" "}
+              <code className="rounded bg-red-100/80 px-1 dark:bg-red-900/80">properties</code> and{" "}
+              <code className="rounded bg-red-100/80 px-1 dark:bg-red-900/80">property_images</code> for your role, or fix RLS so owners
+              can read rows where <code className="rounded bg-red-100/80 px-1 dark:bg-red-900/80">owner_id = auth.uid()</code>.
             </p>
           </div>
         )}
 
         {rows.length === 0 && !listError ? (
-          <div className="mt-14 rounded-2xl border border-dashed border-zinc-300 bg-white/80 p-12 text-center">
-            <p className="text-zinc-600">No listings yet for your account.</p>
-            <p className="mt-3 text-sm text-zinc-500">
-              If you already have rows in Supabase, ensure <code className="rounded bg-zinc-100 px-1">owner_id</code>{" "}
+          <div className="mt-14 rounded-2xl border border-dashed border-zinc-300 bg-white/80 p-12 text-center dark:border-zinc-600 dark:bg-zinc-900/60">
+            <p className="text-zinc-600 dark:text-zinc-300">No listings yet for your account.</p>
+            <p className="mt-3 text-sm text-zinc-500 dark:text-zinc-400">
+              If you already have rows in Supabase, ensure <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">owner_id</code>{" "}
               matches your user id.
             </p>
             <Link
               href="/owner/add-property"
-              className="mt-4 inline-block font-semibold text-emerald-700 underline hover:text-emerald-800"
+              className="mt-4 inline-block font-semibold text-emerald-700 underline hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300"
             >
               Create your first listing
             </Link>
@@ -97,7 +97,7 @@ export default async function MyPropertiesPage() {
               return (
                 <li
                   key={p.id}
-                  className="flex flex-col overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-md shadow-zinc-200/50 transition hover:shadow-lg"
+                  className="flex flex-col overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-md shadow-zinc-200/50 transition hover:shadow-lg dark:border-zinc-700/80 dark:bg-zinc-900/90 dark:shadow-black/40"
                 >
                   <div className="relative">
                     <PropertyCardCarousel
@@ -113,25 +113,27 @@ export default async function MyPropertiesPage() {
                     )}
                   </div>
                   <div className="flex flex-1 flex-col p-4">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-emerald-800/90">{p.property_type}</p>
-                    <p className="line-clamp-2 font-semibold text-zinc-900">{p.title}</p>
-                    {p.location ? (
-                      <p className="mt-1 line-clamp-1 text-sm text-zinc-500">{p.location}</p>
-                    ) : null}
-                    <p className="mt-2 text-lg font-bold tabular-nums text-emerald-800">
-                      {formatRentInr(p.price)}
-                      <span className="text-sm font-normal text-zinc-500">/mo</span>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-emerald-800/90 dark:text-emerald-400/90">
+                      {p.property_type}
                     </p>
-                    <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-zinc-100 pt-4">
+                    <p className="line-clamp-2 font-semibold text-zinc-900 dark:text-zinc-50">{p.title}</p>
+                    {p.location ? (
+                      <p className="mt-1 line-clamp-1 text-sm text-zinc-500 dark:text-zinc-400">{p.location}</p>
+                    ) : null}
+                    <p className="mt-2 text-lg font-bold tabular-nums text-emerald-800 dark:text-emerald-400">
+                      {formatRentInr(p.price)}
+                      <span className="text-sm font-normal text-zinc-500 dark:text-zinc-400">/mo</span>
+                    </p>
+                    <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-zinc-100 pt-4 dark:border-zinc-700">
                       <Link
                         href={`/property/${p.id}`}
-                        className="text-sm font-medium text-zinc-700 underline-offset-4 hover:text-zinc-900 hover:underline"
+                        className="text-sm font-medium text-zinc-700 underline-offset-4 hover:text-zinc-900 hover:underline dark:text-zinc-300 dark:hover:text-white"
                       >
                         View
                       </Link>
                       <Link
                         href={`/owner/edit/${p.id}`}
-                        className="text-sm font-semibold text-emerald-700 hover:text-emerald-800"
+                        className="text-sm font-semibold text-emerald-700 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300"
                       >
                         Edit
                       </Link>

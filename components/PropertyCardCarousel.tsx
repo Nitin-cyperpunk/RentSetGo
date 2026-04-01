@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
 const AUTO_MS = 4500;
 
@@ -12,9 +12,19 @@ type Props = {
   sizes: string;
   /** Tailwind aspect class, e.g. `aspect-[16/10]` for owner cards */
   aspectClass?: string;
+  /** When false, image area opens login prompt instead of navigating (home listings). */
+  isLoggedIn?: boolean;
+  onRequireLogin?: () => void;
 };
 
-export function PropertyCardCarousel({ urls, propertyId, sizes, aspectClass = "aspect-[4/3]" }: Props) {
+export function PropertyCardCarousel({
+  urls,
+  propertyId,
+  sizes,
+  aspectClass = "aspect-[4/3]",
+  isLoggedIn = true,
+  onRequireLogin,
+}: Props) {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const touchStartX = useRef<number | null>(null);
@@ -42,25 +52,46 @@ export function PropertyCardCarousel({ urls, propertyId, sizes, aspectClass = "a
 
   const detailHref = `/property/${propertyId}`;
 
+  const ImageNav = ({ className, children }: { className: string; children: ReactNode }) => {
+    if (isLoggedIn) {
+      return (
+        <Link href={detailHref} className={className}>
+          {children}
+        </Link>
+      );
+    }
+    return (
+      <button
+        type="button"
+        className={className}
+        onClick={() => onRequireLogin?.()}
+      >
+        {children}
+      </button>
+    );
+  };
+
   if (n === 0) {
     return (
-      <div className={`relative ${aspectClass} bg-zinc-100`}>
-        <div className="flex h-full items-center justify-center text-sm text-zinc-400">No photo</div>
+      <div className={`relative ${aspectClass} bg-zinc-100 dark:bg-zinc-800`}>
+        <div className="flex h-full items-center justify-center text-sm text-zinc-400 dark:text-zinc-500">
+          No photo
+        </div>
       </div>
     );
   }
 
   if (n === 1) {
     return (
-      <Link href={detailHref} className={`relative block ${aspectClass} bg-zinc-100`}>
+      <ImageNav className={`relative block ${aspectClass} bg-zinc-100 dark:bg-zinc-800`}>
         <Image src={urls[0]} alt="" fill className="object-cover" sizes={sizes} priority={false} />
-      </Link>
+      </ImageNav>
     );
   }
 
   return (
     <div
-      className={`relative ${aspectClass} overflow-hidden bg-zinc-100`}
+      className={`relative ${aspectClass} overflow-hidden bg-zinc-100 dark:bg-zinc-800`}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onTouchStart={(e) => {
@@ -84,9 +115,9 @@ export function PropertyCardCarousel({ urls, propertyId, sizes, aspectClass = "a
           }
           aria-hidden={i !== index}
         >
-          <Link href={detailHref} className="block h-full w-full">
+          <ImageNav className="block h-full w-full">
             <Image src={url} alt="" fill className="object-cover" sizes={sizes} />
-          </Link>
+          </ImageNav>
         </div>
       ))}
 

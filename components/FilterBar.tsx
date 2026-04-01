@@ -12,20 +12,20 @@ export function FilterBar({ defaultQ = "", defaultMax = "", defaultLocation = ""
     <form
       method="get"
       action="/"
-      className="flex flex-col gap-3 rounded-lg border border-zinc-200 bg-white p-4 sm:flex-row sm:flex-wrap sm:items-end"
+      className="flex flex-col gap-4 rounded-2xl border border-white/60 bg-white/70 p-5 shadow-lg shadow-zinc-900/5 backdrop-blur-xl dark:border-zinc-700/80 dark:bg-zinc-900/70 sm:flex-row sm:flex-wrap sm:items-end"
     >
-      <label className="flex min-w-[140px] flex-1 flex-col gap-1 text-sm">
-        <span className="text-zinc-500">Search</span>
+      <label className="flex min-w-[140px] flex-1 flex-col gap-1.5 text-sm">
+        <span className="font-medium text-zinc-500 dark:text-zinc-400">Search</span>
         <input
           name="q"
           type="search"
           placeholder="Title or area"
           defaultValue={defaultQ}
-          className="rounded-md border border-zinc-200 px-3 py-2 text-zinc-900 outline-none focus:border-zinc-400"
+          className="rounded-xl border border-zinc-200/90 bg-white/90 px-4 py-2.5 text-zinc-900 outline-none ring-emerald-500/0 transition focus:border-emerald-400/80 focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-600 dark:bg-zinc-950/80 dark:text-zinc-100"
         />
       </label>
-      <label className="flex w-full min-w-[120px] flex-col gap-1 text-sm sm:w-auto">
-        <span className="text-zinc-500">Max rent (₹/mo)</span>
+      <label className="flex w-full min-w-[120px] flex-col gap-1.5 text-sm sm:w-auto">
+        <span className="font-medium text-zinc-500 dark:text-zinc-400">Max rent (₹/mo)</span>
         <input
           name="max"
           type="number"
@@ -33,29 +33,29 @@ export function FilterBar({ defaultQ = "", defaultMax = "", defaultLocation = ""
           step={1}
           placeholder="Any"
           defaultValue={defaultMax}
-          className="rounded-md border border-zinc-200 px-3 py-2 text-zinc-900 outline-none focus:border-zinc-400"
+          className="rounded-xl border border-zinc-200/90 bg-white/90 px-4 py-2.5 text-zinc-900 outline-none ring-emerald-500/0 transition focus:border-emerald-400/80 focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-600 dark:bg-zinc-950/80 dark:text-zinc-100"
         />
       </label>
-      <label className="flex min-w-[140px] flex-1 flex-col gap-1 text-sm">
-        <span className="text-zinc-500">Location</span>
+      <label className="flex min-w-[140px] flex-1 flex-col gap-1.5 text-sm">
+        <span className="font-medium text-zinc-500 dark:text-zinc-400">Location</span>
         <input
           name="loc"
           type="text"
-          placeholder="Neighborhood, city…"
+          placeholder="Neighborhood, city"
           defaultValue={defaultLocation}
-          className="rounded-md border border-zinc-200 px-3 py-2 text-zinc-900 outline-none focus:border-zinc-400"
+          className="rounded-xl border border-zinc-200/90 bg-white/90 px-4 py-2.5 text-zinc-900 outline-none ring-emerald-500/0 transition focus:border-emerald-400/80 focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-600 dark:bg-zinc-950/80 dark:text-zinc-100"
         />
       </label>
-      <div className="flex gap-2">
+      <div className="flex w-full gap-2 sm:w-auto sm:min-w-0">
         <button
           type="submit"
-          className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
+          className="flex-1 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-emerald-600/20 transition hover:brightness-110 active:scale-[0.98] sm:flex-initial"
         >
           Apply
         </button>
         <Link
           href="/"
-          className="rounded-md border border-zinc-200 px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50"
+          className="inline-flex flex-1 items-center justify-center rounded-xl border border-zinc-200/90 bg-white/80 px-5 py-2.5 text-sm font-medium text-zinc-700 backdrop-blur-sm transition hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-900/60 dark:text-zinc-200 dark:hover:bg-zinc-800 sm:flex-initial"
         >
           Reset
         </Link>

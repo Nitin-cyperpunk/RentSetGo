@@ -9,18 +9,21 @@ export type Database = {
           id: string;
           name: string | null;
           role: string;
+          phone: string | null;
           created_at: string;
         };
         Insert: {
           id: string;
           name?: string | null;
           role?: string;
+          phone?: string | null;
           created_at?: string;
         };
         Update: {
           id?: string;
           name?: string | null;
           role?: string;
+          phone?: string | null;
           created_at?: string;
         };
       };
