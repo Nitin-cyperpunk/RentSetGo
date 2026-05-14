@@ -3,8 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "sync:qr": "node scripts/sync-qr.mjs",
+    "dev": "pnpm sync:qr && next dev",
+    "build": "pnpm sync:qr && next build",
     "start": "next start",
     "lint": "eslint",
     "db:types": "pnpm dlx supabase@latest gen types typescript --linked > types/database.types.ts",
