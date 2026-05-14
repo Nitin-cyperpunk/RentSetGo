@@ -35,6 +35,8 @@ export type Database = {
           description: string | null;
           price: number;
           property_type: string;
+          deal_type: string;
+          category: string;
           location: string | null;
           address: string | null;
           area_sqft: number | null;
@@ -57,6 +59,8 @@ export type Database = {
           description?: string | null;
           price: number;
           property_type: string;
+          deal_type?: string;
+          category?: string;
           location?: string | null;
           address?: string | null;
           area_sqft?: number | null;
@@ -79,6 +83,8 @@ export type Database = {
           description?: string | null;
           price?: number;
           property_type?: string;
+          deal_type?: string;
+          category?: string;
           location?: string | null;
           address?: string | null;
           area_sqft?: number | null;

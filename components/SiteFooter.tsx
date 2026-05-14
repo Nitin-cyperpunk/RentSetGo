@@ -3,8 +3,8 @@ import { Building2, Heart, Home, KeyRound, LayoutDashboard, LogIn, Sparkles } fr
 
 export function SiteFooter() {
   return (
-    <footer className="mt-auto w-full border-t border-zinc-200/70 bg-background/80 backdrop-blur-md dark:border-zinc-800/90 dark:bg-zinc-950/50">
-      <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-12">
+    <footer className="mt-auto w-full border-t border-zinc-200/50 dark:border-zinc-800/50">
+      <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-9">
         <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 md:grid-cols-3 md:gap-12">
           <div className="md:max-w-sm">
             <div className="flex items-center gap-2">
@@ -21,6 +21,12 @@ export function SiteFooter() {
             <p className="mt-4 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
               <Heart className="size-3.5 text-rose-500/80" aria-hidden />
               For renters and owners in Nashik
+            </p>
+            <p className="mt-3 text-xs text-muted-foreground">
+              Like RentSetGo?{" "}
+              <Link href="/support" className="font-medium text-rose-600 hover:underline dark:text-rose-400">
+                Support the project
+              </Link>
             </p>
           </div>
 
@@ -86,7 +92,7 @@ export function SiteFooter() {
           </div>
         </div>
 
-        <div className="mt-10 flex flex-col items-stretch gap-4 border-t border-zinc-200/70 pt-8 dark:border-zinc-800 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+        <div className="mt-8 flex flex-col items-stretch gap-4 border-t border-zinc-200/50 pt-6 dark:border-zinc-800/50 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
           <p className="text-center text-xs text-muted-foreground sm:text-left">
             © {new Date().getFullYear()} RentSetGo · Nashik, India
           </p>
@@ -96,6 +102,12 @@ export function SiteFooter() {
           >
             <Link href="/forgot-password" className="transition hover:text-emerald-700 dark:hover:text-emerald-400">
               Forgot password
+            </Link>
+            <Link href="/#faq" className="transition hover:text-emerald-700 dark:hover:text-emerald-400">
+              FAQ
+            </Link>
+            <Link href="/support" className="transition hover:text-emerald-700 dark:hover:text-emerald-400">
+              Support
             </Link>
             <Link href="#browse" className="transition hover:text-emerald-700 dark:hover:text-emerald-400">
               Search

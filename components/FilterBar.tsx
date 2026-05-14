@@ -4,16 +4,51 @@ type Props = {
   defaultQ?: string;
   defaultMax?: string;
   defaultLocation?: string;
+  defaultDeal?: string;
+  defaultCategory?: string;
 };
 
 /** GET / — keeps filters in the URL without client JS. */
-export function FilterBar({ defaultQ = "", defaultMax = "", defaultLocation = "" }: Props) {
+export function FilterBar({
+  defaultQ = "",
+  defaultMax = "",
+  defaultLocation = "",
+  defaultDeal = "",
+  defaultCategory = "",
+}: Props) {
+  const maxLabel =
+    defaultDeal === "sale" ? "Max price (₹)" : "Max rent (₹/mo)";
+
   return (
     <form
       method="get"
       action="/"
       className="flex flex-col gap-4 rounded-2xl border border-white/60 bg-white/70 p-5 shadow-lg shadow-zinc-900/5 backdrop-blur-xl dark:border-zinc-700/80 dark:bg-zinc-900/70 sm:flex-row sm:flex-wrap sm:items-end"
     >
+      <label className="flex min-w-[120px] flex-col gap-1.5 text-sm sm:w-auto">
+        <span className="font-medium text-zinc-500 dark:text-zinc-400">Looking for</span>
+        <select
+          name="deal"
+          defaultValue={defaultDeal}
+          className="rounded-xl border border-zinc-200/90 bg-white/90 px-4 py-2.5 text-zinc-900 outline-none focus:border-emerald-400/80 focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-600 dark:bg-zinc-950/80 dark:text-zinc-100"
+        >
+          <option value="">Rent &amp; sale</option>
+          <option value="rent">Rent only</option>
+          <option value="sale">Buy / sale</option>
+        </select>
+      </label>
+      <label className="flex min-w-[120px] flex-col gap-1.5 text-sm sm:w-auto">
+        <span className="font-medium text-zinc-500 dark:text-zinc-400">Category</span>
+        <select
+          name="cat"
+          defaultValue={defaultCategory}
+          className="rounded-xl border border-zinc-200/90 bg-white/90 px-4 py-2.5 text-zinc-900 outline-none focus:border-emerald-400/80 focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-600 dark:bg-zinc-950/80 dark:text-zinc-100"
+        >
+          <option value="">All types</option>
+          <option value="residential">Residential</option>
+          <option value="commercial">Shops &amp; commercial</option>
+        </select>
+      </label>
       <label className="flex min-w-[140px] flex-1 flex-col gap-1.5 text-sm">
         <span className="font-medium text-zinc-500 dark:text-zinc-400">Search</span>
         <input
@@ -25,7 +60,7 @@ export function FilterBar({ defaultQ = "", defaultMax = "", defaultLocation = ""
         />
       </label>
       <label className="flex w-full min-w-[120px] flex-col gap-1.5 text-sm sm:w-auto">
-        <span className="font-medium text-zinc-500 dark:text-zinc-400">Max rent (₹/mo)</span>
+        <span className="font-medium text-zinc-500 dark:text-zinc-400">{maxLabel}</span>
         <input
           name="max"
           type="number"

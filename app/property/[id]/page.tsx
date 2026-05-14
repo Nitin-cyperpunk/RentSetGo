@@ -5,6 +5,7 @@ import { notFound, redirect } from "next/navigation";
 import { getPropertyById } from "@/app/actions/properties";
 import { createClient } from "@/lib/supabase/server";
 import { PropertyImageGallery } from "@/components/PropertyImageGallery";
+import { PropertyOwnerContact } from "@/components/PropertyOwnerContact";
 import { allImageUrls } from "@/types/property";
 
 type PageProps = {
@@ -84,7 +85,10 @@ export default async function PropertyDetailPage({ params }: PageProps) {
         <div className="overflow-hidden rounded-2xl border border-zinc-200/80 bg-white/95 shadow-xl shadow-zinc-200/50 dark:border-zinc-700/80 dark:bg-zinc-900/90 dark:shadow-black/40">
           <div className="lg:grid lg:grid-cols-[1.45fr_0.8fr] gap-x-10">
             <div className="p-6 md:p-10 pb-6">
-              <PropertyImageGallery images={images} imageTitle={property.title} />
+              <PropertyImageGallery
+                images={images}
+                imageTitle={property.title}
+              />
               {/* Property Tags */}
               <div className="mt-5 flex flex-wrap gap-2 text-sm">
                 <span className="rounded-full border border-emerald-200 bg-emerald-100 px-2.5 py-0.5 font-semibold text-emerald-900 shadow-sm dark:border-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-100">
@@ -225,29 +229,11 @@ export default async function PropertyDetailPage({ params }: PageProps) {
                   </span>{" "}
                   {new Date(property.expires_at).toLocaleDateString()}
                 </p>
-                <div className="mt-5 border-t border-zinc-200 pt-5 dark:border-zinc-700">
-                  <p className="text-md mb-2 font-semibold text-zinc-800 dark:text-zinc-100">
-                    Contact Owner
-                  </p>
-                  {property.contact_phone ? (
-                    <a
-                      href={`tel:${property.contact_phone.replace(/\s/g, "")}`}
-                      className="block text-lg font-bold text-emerald-700 underline dark:text-emerald-400"
-                    >
-                      {property.contact_phone}
-                    </a>
-                  ) : (
-                    <p className="text-md text-zinc-500 dark:text-zinc-400">Phone not available</p>
-                  )}
-                  {property.contact_email && (
-                    <a
-                      href={`mailto:${property.contact_email}`}
-                      className="mt-2 block text-base font-medium text-emerald-700 underline dark:text-emerald-400"
-                    >
-                      {property.contact_email}
-                    </a>
-                  )}
-                </div>
+                <PropertyOwnerContact
+                  phone={property.contact_phone}
+                  email={property.contact_email}
+                  listingTitle={property.title}
+                />
               </div>
               {/* Property metadata */}
               <div className="mt-6">

@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export function CtaStrip() {
   return (
-    <section className="px-4 pb-10 pt-8 sm:px-6 sm:pb-12 sm:pt-10">
+    <section className="px-4 pb-6 pt-4 sm:px-6 sm:pb-8 sm:pt-6">
       <div className="relative mx-auto max-w-5xl overflow-hidden rounded-3xl border border-emerald-200/60 bg-gradient-to-br from-emerald-600/95 via-teal-700/95 to-zinc-800 p-8 shadow-xl shadow-emerald-900/20 sm:p-10 dark:border-emerald-500/20">
         <div
           className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/10 blur-3xl"

@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 
 import { PropertyCard } from "@/components/PropertyCard";
 import { FilterBar } from "@/components/FilterBar";
+import { BrowseSectionHeading } from "@/components/home/BrowseSectionHeading";
 import { CtaStrip } from "@/components/home/CtaStrip";
+import { FaqSection } from "@/components/home/FaqSection";
 import { FeaturesGrid } from "@/components/home/FeaturesGrid";
 import { HeroSection } from "@/components/home/HeroSection";
 import { listActiveProperties } from "@/lib/queries/properties";
@@ -44,12 +46,10 @@ export default async function HomePage({ searchParams }: PageProps) {
     <div className="flex flex-1 flex-col">
       <HeroSection />
 
-      <section id="browse" className="scroll-mt-8 border-b border-zinc-200/80 px-4 pb-12 pt-2 sm:px-6">
+      <section id="browse" className="scroll-mt-8 px-4 pb-8 pt-2 sm:px-6">
         <div className="mx-auto max-w-5xl">
           <div className="mb-6 text-center sm:text-left">
-            <h2 className="text-xl font-bold tracking-tight text-zinc-900 sm:text-2xl dark:text-zinc-50">
-              Browse listings
-            </h2>
+            <BrowseSectionHeading />
             <p className="mt-2 max-w-2xl text-sm text-zinc-600 dark:text-zinc-400">
               Listings from individual owners. Filter by budget and area, then reach out directly.
             </p>
@@ -58,7 +58,7 @@ export default async function HomePage({ searchParams }: PageProps) {
         </div>
       </section>
 
-      <section className="mx-auto w-full max-w-5xl flex-1 px-4 py-10 sm:px-6">
+      <section className="mx-auto w-full max-w-5xl flex-1 px-4 pb-8 pt-6 sm:px-6">
         {properties.length > 0 && !listError ? (
           <h2 className="mb-6 text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
             {q || loc || maxRaw ? "Matching listings" : "Latest listings"}
@@ -108,6 +108,7 @@ export default async function HomePage({ searchParams }: PageProps) {
       </section>
 
       <FeaturesGrid />
+      <FaqSection />
       <CtaStrip />
     </div>
   );

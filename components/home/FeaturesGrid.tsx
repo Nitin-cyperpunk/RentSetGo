@@ -1,5 +1,7 @@
 import { MapPin, MessageCircle, ShieldCheck, Sparkles } from "lucide-react";
 
+import { SectionTypewriterHeading } from "@/components/SectionTypewriterHeading";
+
 const items = [
   {
     icon: MapPin,
@@ -26,12 +28,14 @@ const items = [
 
 export function FeaturesGrid() {
   return (
-    <section className="border-y border-zinc-200/80 bg-white/40 px-4 py-12 backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950/40 sm:px-6 sm:py-14">
+    <section className="px-4 py-10 sm:px-6 sm:py-12">
       <div className="mx-auto max-w-5xl">
         <div className="text-center">
-          <h2 className="text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl dark:text-zinc-50">
-            Why renters use RentSetGo
-          </h2>
+          <SectionTypewriterHeading
+            text="Why renters use RentSetGo"
+            className="text-2xl sm:text-3xl"
+            startDelay={0.1}
+          />
           <p className="mx-auto mt-3 max-w-xl text-sm text-zinc-600 dark:text-zinc-400">
             A calmer way to scan the market—whether you are moving across town or just browsing.
           </p>

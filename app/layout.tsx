@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 
 import { Navbar } from "@/components/Navbar";
@@ -56,12 +57,13 @@ export default function RootLayout({
       <body className="app-backdrop flex min-h-full flex-col font-sans text-foreground antialiased">
         <ThemeProvider>
           <ThemeToggle />
-          <div className="flex min-h-full flex-1 flex-col pb-32 sm:pb-36">
+          <div className="flex min-h-full flex-1 flex-col pb-24 sm:pb-28">
             {children}
             <SiteFooter />
           </div>
           <Navbar />
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   );

@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useCallback, useState } from "react";
 
+import { ListingBadges } from "@/components/ListingBadges";
 import { LoginToViewDetailsModal } from "@/components/LoginToViewDetailsModal";
 import { PropertyCardCarousel } from "@/components/PropertyCardCarousel";
+import { parseDealType, priceSuffix } from "@/lib/listing";
 import type { PropertyWithImages } from "@/types/property";
 
 type Props = {
@@ -28,6 +30,8 @@ export function PropertyCardInteractive({
   const loginHref = `/login?next=${encodeURIComponent(detailPath)}`;
 
   const onRequireLogin = useCallback(() => setShowLoginModal(true), []);
+  const deal = parseDealType(property.deal_type);
+  const priceSfx = priceSuffix(deal);
 
   const titleLinkClass =
     "hover:underline dark:text-zinc-100";
@@ -63,9 +67,12 @@ export function PropertyCardInteractive({
             </h2>
             <p className="shrink-0 text-[15px] font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">
               {formattedRent}
-              <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">/mo</span>
+              {priceSfx ? (
+                <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">{priceSfx}</span>
+              ) : null}
             </p>
           </div>
+          <ListingBadges dealType={property.deal_type} category={property.category} compact />
           <p className="text-xs font-medium uppercase tracking-wide text-emerald-800/80 dark:text-emerald-400/90">
             {property.property_type}
           </p>

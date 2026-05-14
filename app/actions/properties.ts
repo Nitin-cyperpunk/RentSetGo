@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { parseDealType, parseListingCategory } from "@/lib/listing";
+import { ensureProfileIfMissing } from "@/lib/auth/profile";
 import { resolveOwnerId } from "@/lib/dev-owner";
 import { createClient } from "@/lib/supabase/server";
 import { getSupabaseForReads } from "@/lib/supabase/server-reads";
@@ -28,13 +30,21 @@ async function getClientsForOwnerAction() {
     return { error: "Sign in to manage listings." as const };
   }
 
+  await ensureProfileIfMissing(supabase, user);
+
   return { ownerId: user.id, db: supabase, storage: supabase };
 }
 
 function dbErrorMessage(err: { message: string; hint?: string | null; details?: string | null; code?: string }) {
   const parts = [err.message, err.hint, err.details].filter(Boolean);
   if (err.code?.startsWith("23503")) {
-    parts.push("Foreign key failed: ensure you are signed in and your account is valid.");
+    if (err.message?.includes("properties_owner_id_fkey") && err.message?.includes("users")) {
+      parts.push(
+        "Your database still links owner_id to public.users — run the auth.users FK migration in Supabase SQL Editor (see supabase/migrations/20260513120000_properties_owner_auth_users.sql).",
+      );
+    } else {
+      parts.push("Foreign key failed: ensure you are signed in and your account is valid.");
+    }
   }
   if (err.code === "42501" || err.message?.toLowerCase().includes("row-level security")) {
     parts.push("RLS blocked this — sign in and ensure storage/database policies allow your role.");
@@ -134,6 +144,8 @@ export async function submitListing(formData: FormData) {
   const location = String(formData.get("location") ?? "").trim();
   const address = String(formData.get("address") ?? "").trim();
   const property_type = String(formData.get("property_type") ?? "").trim();
+  const deal_type = parseDealType(String(formData.get("deal_type") ?? "rent"));
+  const category = parseListingCategory(String(formData.get("category") ?? "residential"));
   const furnishing = String(formData.get("furnishing") ?? "").trim();
   const available_status = String(formData.get("available_status") ?? "available").trim();
   const contact_phone = String(formData.get("contact_phone") ?? "").trim();
@@ -157,7 +169,7 @@ export async function submitListing(formData: FormData) {
     return { error: "Property type is required." };
   }
   if (!Number.isFinite(priceRaw) || priceRaw < 0) {
-    return { error: "Enter a valid monthly rent." };
+    return { error: deal_type === "sale" ? "Enter a valid sale price." : "Enter a valid monthly rent." };
   }
   if (!expires_at) {
     return { error: "Choose when the listing expires." };
@@ -177,6 +189,8 @@ export async function submitListing(formData: FormData) {
       description: description.trim() || null,
       price: priceRaw,
       property_type,
+      deal_type,
+      category,
       location: location || null,
       address: address || null,
       area_sqft: areaParsed.area_sqft,
@@ -240,6 +254,8 @@ export async function updateListing(propertyId: string, formData: FormData) {
   const location = String(formData.get("location") ?? "").trim();
   const address = String(formData.get("address") ?? "").trim();
   const property_type = String(formData.get("property_type") ?? "").trim();
+  const deal_type = parseDealType(String(formData.get("deal_type") ?? "rent"));
+  const category = parseListingCategory(String(formData.get("category") ?? "residential"));
   const furnishing = String(formData.get("furnishing") ?? "").trim();
   const available_status = String(formData.get("available_status") ?? "available").trim();
   const contact_phone = String(formData.get("contact_phone") ?? "").trim();
@@ -260,7 +276,7 @@ export async function updateListing(propertyId: string, formData: FormData) {
     return { error: "Title and property type are required." };
   }
   if (!Number.isFinite(priceRaw) || priceRaw < 0) {
-    return { error: "Enter a valid monthly rent." };
+    return { error: deal_type === "sale" ? "Enter a valid sale price." : "Enter a valid monthly rent." };
   }
   if (!expires_at) {
     return { error: "Choose when the listing expires." };
@@ -290,6 +306,8 @@ export async function updateListing(propertyId: string, formData: FormData) {
       description: description.trim() || null,
       price: priceRaw,
       property_type,
+      deal_type,
+      category,
       location: location || null,
       address: address || null,
       area_sqft: areaParsed.area_sqft,
@@ -368,4 +386,75 @@ export async function getPropertyForOwner(id: string): Promise<PropertyWithImage
   const row = await getPropertyById(id);
   if (!row || row.owner_id !== ownerId) return null;
   return row;
+}
+
+/** Extend listing expiry by 30 days (owner only). */
+export async function extendListingExpiry(propertyId: string) {
+  const clients = await getClientsForOwnerAction();
+  if ("error" in clients) {
+    return { error: clients.error };
+  }
+  const { ownerId, db } = clients;
+
+  const { data: row, error: fetchErr } = await db
+    .from("properties")
+    .select("expires_at")
+    .eq("id", propertyId)
+    .eq("owner_id", ownerId)
+    .maybeSingle();
+
+  if (fetchErr || !row) {
+    return { error: "Listing not found." };
+  }
+
+  const base = new Date(row.expires_at);
+  const from = base.getTime() > Date.now() ? base : new Date();
+  const next = new Date(from);
+  next.setDate(next.getDate() + 30);
+
+  const { error: upErr } = await db
+    .from("properties")
+    .update({
+      expires_at: next.toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", propertyId)
+    .eq("owner_id", ownerId);
+
+  if (upErr) {
+    return { error: dbErrorMessage(upErr) };
+  }
+
+  revalidatePath("/");
+  revalidatePath("/owner/my-properties");
+  revalidatePath("/owner/dashboard");
+  revalidatePath(`/property/${propertyId}`);
+  return { ok: true as const, expires_at: next.toISOString() };
+}
+
+/** Quick status toggle for owner inventory. */
+export async function setListingAvailability(propertyId: string, status: "available" | "occupied") {
+  const clients = await getClientsForOwnerAction();
+  if ("error" in clients) {
+    return { error: clients.error };
+  }
+  const { ownerId, db } = clients;
+
+  const { error } = await db
+    .from("properties")
+    .update({
+      available_status: status,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", propertyId)
+    .eq("owner_id", ownerId);
+
+  if (error) {
+    return { error: dbErrorMessage(error) };
+  }
+
+  revalidatePath("/");
+  revalidatePath("/owner/my-properties");
+  revalidatePath(`/property/${propertyId}`);
+  return { ok: true as const };
 }

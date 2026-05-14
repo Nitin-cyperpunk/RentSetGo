@@ -24,6 +24,8 @@ type ActiveFilters = {
   q?: string;
   maxPrice?: number;
   location?: string;
+  dealType?: "rent" | "sale";
+  category?: "residential" | "commercial";
 };
 
 function buildActivePropertiesQuery(
@@ -51,6 +53,13 @@ function buildActivePropertiesQuery(
   if (search) {
     const pat = `%${search}%`;
     query = query.or(`title.ilike.${pat},location.ilike.${pat}`);
+  }
+
+  if (filters.dealType === "rent" || filters.dealType === "sale") {
+    query = query.eq("deal_type", filters.dealType);
+  }
+  if (filters.category === "residential" || filters.category === "commercial") {
+    query = query.eq("category", filters.category);
   }
 
   return query;

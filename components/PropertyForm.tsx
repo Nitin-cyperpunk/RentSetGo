@@ -1,9 +1,18 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { submitListing, updateListing } from "@/app/actions/properties";
+import { AiDescriptionAssist } from "@/components/AiDescriptionAssist";
+import {
+  parseDealType,
+  parseListingCategory,
+  priceLabel,
+  propertyTypesForCategory,
+  type DealType,
+  type ListingCategory,
+} from "@/lib/listing";
 import { allImageUrls, type PropertyWithImages } from "@/types/property";
 
 type Props = {
@@ -15,6 +24,15 @@ export function PropertyForm({ property }: Props) {
   const isEdit = Boolean(property);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [dealType, setDealType] = useState<DealType>(
+    parseDealType(property?.deal_type ?? "rent"),
+  );
+  const [category, setCategory] = useState<ListingCategory>(
+    parseListingCategory(property?.category ?? "residential"),
+  );
+
+  const typeOptions = useMemo(() => propertyTypesForCategory(category), [category]);
+  const defaultType = property?.property_type ?? typeOptions[0];
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -50,6 +68,10 @@ export function PropertyForm({ property }: Props) {
 
   const existingUrlsJson = isEdit && property ? JSON.stringify(allImageUrls(property)) : "[]";
 
+  const inputClass =
+    "w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 shadow-sm outline-none transition focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-600 dark:bg-zinc-900/80 dark:text-zinc-100";
+  const labelClass = "text-sm font-medium text-zinc-700 dark:text-zinc-300";
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {isEdit && <input type="hidden" name="existing_image_urls" value={existingUrlsJson} readOnly />}
@@ -63,8 +85,41 @@ export function PropertyForm({ property }: Props) {
         </p>
       )}
 
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          <label htmlFor="deal_type" className={labelClass}>
+            Listing for
+          </label>
+          <select
+            id="deal_type"
+            name="deal_type"
+            value={dealType}
+            onChange={(e) => setDealType(parseDealType(e.target.value))}
+            className={inputClass}
+          >
+            <option value="rent">Rent</option>
+            <option value="sale">Sale (buy)</option>
+          </select>
+        </div>
+        <div className="space-y-2">
+          <label htmlFor="category" className={labelClass}>
+            Category
+          </label>
+          <select
+            id="category"
+            name="category"
+            value={category}
+            onChange={(e) => setCategory(parseListingCategory(e.target.value))}
+            className={inputClass}
+          >
+            <option value="residential">Residential (flats, PG)</option>
+            <option value="commercial">Commercial (shop, office)</option>
+          </select>
+        </div>
+      </div>
+
       <div className="space-y-2">
-        <label htmlFor="title" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+        <label htmlFor="title" className={labelClass}>
           Title
         </label>
         <input
@@ -72,13 +127,19 @@ export function PropertyForm({ property }: Props) {
           name="title"
           required
           defaultValue={property?.title}
-          className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 shadow-sm outline-none transition focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-600 dark:bg-zinc-900/80 dark:text-zinc-100"
-          placeholder="e.g. Bright 2BHK with balcony"
+          className={inputClass}
+          placeholder={
+            category === "commercial"
+              ? "e.g. Ground-floor shop on main road"
+              : "e.g. Bright 2BHK with balcony"
+          }
         />
       </div>
 
+      <AiDescriptionAssist />
+
       <div className="space-y-2">
-        <label htmlFor="description" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+        <label htmlFor="description" className={labelClass}>
           Description
         </label>
         <textarea
@@ -86,15 +147,15 @@ export function PropertyForm({ property }: Props) {
           name="description"
           rows={5}
           defaultValue={property?.description ?? ""}
-          className="w-full resize-y rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 shadow-sm outline-none transition focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-600 dark:bg-zinc-900/80 dark:text-zinc-100"
-          placeholder="Details renters should know…"
+          className={`${inputClass} resize-y`}
+          placeholder="Details renters or buyers should know…"
         />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <label htmlFor="price" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            Monthly rent (₹)
+          <label htmlFor="price" className={labelClass}>
+            {priceLabel(dealType)}
           </label>
           <input
             id="price"
@@ -104,44 +165,45 @@ export function PropertyForm({ property }: Props) {
             step={1}
             required
             defaultValue={property?.price}
-            className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 shadow-sm outline-none transition focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-600 dark:bg-zinc-900/80 dark:text-zinc-100"
+            className={inputClass}
           />
         </div>
         <div className="space-y-2">
-          <label htmlFor="property_type" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+          <label htmlFor="property_type" className={labelClass}>
             Property type
           </label>
           <select
             id="property_type"
             name="property_type"
             required
-            defaultValue={property?.property_type ?? "2BHK"}
-            className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 shadow-sm outline-none transition focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-600 dark:bg-zinc-900/80 dark:text-zinc-100"
+            defaultValue={defaultType}
+            key={`${category}-${defaultType}`}
+            className={inputClass}
           >
-            <option value="1BHK">1BHK</option>
-            <option value="2BHK">2BHK</option>
-            <option value="3BHK">3BHK</option>
-            <option value="shop">Shop</option>
-            <option value="pg">PG</option>
+            {typeOptions.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
           </select>
         </div>
       </div>
 
       <div className="space-y-2">
-        <label htmlFor="location" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+        <label htmlFor="location" className={labelClass}>
           Location <span className="font-normal text-zinc-500 dark:text-zinc-400">(optional)</span>
         </label>
         <input
           id="location"
           name="location"
           defaultValue={property?.location ?? ""}
-          className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 shadow-sm outline-none transition focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-600 dark:bg-zinc-900/80 dark:text-zinc-100"
+          className={inputClass}
           placeholder="e.g. Indra Nagar, Nashik"
         />
       </div>
 
       <div className="space-y-2">
-        <label htmlFor="map_link" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+        <label htmlFor="map_link" className={labelClass}>
           Google Maps link <span className="font-normal text-zinc-500 dark:text-zinc-400">(optional)</span>
         </label>
         <input
@@ -150,60 +212,62 @@ export function PropertyForm({ property }: Props) {
           type="url"
           inputMode="url"
           defaultValue={property?.map_link ?? ""}
-          className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 shadow-sm outline-none transition focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-600 dark:bg-zinc-900/80 dark:text-zinc-100"
+          className={inputClass}
           placeholder="https://maps.google.com/…"
         />
         <p className="text-xs text-zinc-500 dark:text-zinc-400">Paste Google Maps share link</p>
       </div>
 
       <div className="space-y-2">
-        <label htmlFor="address" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+        <label htmlFor="address" className={labelClass}>
           Address <span className="font-normal text-zinc-500 dark:text-zinc-400">(optional)</span>
         </label>
         <input
           id="address"
           name="address"
           defaultValue={property?.address ?? ""}
-          className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 shadow-sm outline-none transition focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-600 dark:bg-zinc-900/80 dark:text-zinc-100"
+          className={inputClass}
           placeholder="Street, landmark…"
         />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
-          <label htmlFor="bedrooms" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            Bedrooms
-          </label>
-          <input
-            id="bedrooms"
-            name="bedrooms"
-            type="number"
-            min={0}
-            step={1}
-            defaultValue={property?.bedrooms ?? ""}
-            className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 shadow-sm outline-none transition focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-600 dark:bg-zinc-900/80 dark:text-zinc-100"
-            placeholder="—"
-          />
+      {category === "residential" ? (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <label htmlFor="bedrooms" className={labelClass}>
+              Bedrooms
+            </label>
+            <input
+              id="bedrooms"
+              name="bedrooms"
+              type="number"
+              min={0}
+              step={1}
+              defaultValue={property?.bedrooms ?? ""}
+              className={inputClass}
+              placeholder="—"
+            />
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="bathrooms" className={labelClass}>
+              Bathrooms
+            </label>
+            <input
+              id="bathrooms"
+              name="bathrooms"
+              type="number"
+              min={0}
+              step={1}
+              defaultValue={property?.bathrooms ?? ""}
+              className={inputClass}
+              placeholder="—"
+            />
+          </div>
         </div>
-        <div className="space-y-2">
-          <label htmlFor="bathrooms" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            Bathrooms
-          </label>
-          <input
-            id="bathrooms"
-            name="bathrooms"
-            type="number"
-            min={0}
-            step={1}
-            defaultValue={property?.bathrooms ?? ""}
-            className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 shadow-sm outline-none transition focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-600 dark:bg-zinc-900/80 dark:text-zinc-100"
-            placeholder="—"
-          />
-        </div>
-      </div>
+      ) : null}
 
       <div className="space-y-2">
-        <label htmlFor="area_sqft" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+        <label htmlFor="area_sqft" className={labelClass}>
           Area (sqft) <span className="font-normal text-zinc-500 dark:text-zinc-400">(optional)</span>
         </label>
         <input
@@ -213,21 +277,21 @@ export function PropertyForm({ property }: Props) {
           min={0}
           step={1}
           defaultValue={property?.area_sqft ?? ""}
-          className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 shadow-sm outline-none transition focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-600 dark:bg-zinc-900/80 dark:text-zinc-100"
+          className={inputClass}
           placeholder="e.g. 1200"
         />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <label htmlFor="furnishing" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+          <label htmlFor="furnishing" className={labelClass}>
             Furnishing
           </label>
           <select
             id="furnishing"
             name="furnishing"
             defaultValue={property?.furnishing ?? ""}
-            className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 shadow-sm outline-none transition focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-600 dark:bg-zinc-900/80 dark:text-zinc-100"
+            className={inputClass}
           >
             <option value="">— Select —</option>
             <option value="furnished">Furnished</option>
@@ -236,23 +300,23 @@ export function PropertyForm({ property }: Props) {
           </select>
         </div>
         <div className="space-y-2">
-          <label htmlFor="available_status" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+          <label htmlFor="available_status" className={labelClass}>
             Status
           </label>
           <select
             id="available_status"
             name="available_status"
             defaultValue={property?.available_status ?? "available"}
-            className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 shadow-sm outline-none transition focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-600 dark:bg-zinc-900/80 dark:text-zinc-100"
+            className={inputClass}
           >
             <option value="available">Available</option>
-            <option value="occupied">Occupied</option>
+            <option value="occupied">Occupied / rented out</option>
           </select>
         </div>
       </div>
 
       <div className="space-y-2">
-        <label htmlFor="contact_phone" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+        <label htmlFor="contact_phone" className={labelClass}>
           Contact phone <span className="font-normal text-zinc-500 dark:text-zinc-400">(optional)</span>
         </label>
         <input
@@ -260,13 +324,13 @@ export function PropertyForm({ property }: Props) {
           name="contact_phone"
           type="tel"
           defaultValue={property?.contact_phone ?? ""}
-          className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 shadow-sm outline-none transition focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-600 dark:bg-zinc-900/80 dark:text-zinc-100"
+          className={inputClass}
           placeholder="+91 …"
         />
       </div>
 
       <div className="space-y-2">
-        <label htmlFor="expires_at" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+        <label htmlFor="expires_at" className={labelClass}>
           Listing expires
         </label>
         <input
@@ -276,12 +340,12 @@ export function PropertyForm({ property }: Props) {
           required
           min={new Date().toISOString().slice(0, 10)}
           defaultValue={expiresValue}
-          className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 shadow-sm outline-none transition focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-600 dark:bg-zinc-900/80 dark:text-zinc-100"
+          className={inputClass}
         />
       </div>
 
       <div className="space-y-2">
-        <label htmlFor="images" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+        <label htmlFor="images" className={labelClass}>
           {isEdit ? "Replace / add photos" : "Photos"}
         </label>
         <input
