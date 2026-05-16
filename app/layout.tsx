@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 
+import { AppShell } from "@/components/AppShell";
 import { Navbar } from "@/components/Navbar";
 import { SiteFooter } from "@/components/SiteFooter";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -57,11 +58,9 @@ export default function RootLayout({
       <body className="app-backdrop flex min-h-full flex-col font-sans text-foreground antialiased">
         <ThemeProvider>
           <ThemeToggle />
-          <div className="flex min-h-full flex-1 flex-col pb-24 sm:pb-28">
+          <AppShell footer={<SiteFooter />} navbar={<Navbar />}>
             {children}
-            <SiteFooter />
-          </div>
-          <Navbar />
+          </AppShell>
         </ThemeProvider>
         <Analytics />
       </body>

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { safeNextPath } from "@/lib/auth/urls";
 import {
   ensureProfileIfMissing,
   getProfileForUser,
@@ -42,14 +43,63 @@ export async function signInWithPassword(
 
   revalidatePath("/", "layout");
 
-  const nextRaw = String(formData.get("next") ?? "").trim();
-  const safeNext =
-    nextRaw.startsWith("/") && !nextRaw.startsWith("//") ? nextRaw : null;
+  const safeNext = safeNextPath(String(formData.get("next") ?? ""));
   if (safeNext) {
     redirect(safeNext);
   }
 
   redirect(isOwnerRole(profile?.role) ? "/owner/dashboard" : "/");
+}
+
+export async function completeProfile(
+  formData: FormData,
+): Promise<{ error?: string } | void> {
+  const name = String(formData.get("name") ?? "").trim();
+  const phone = String(formData.get("phone") ?? "").trim();
+  const roleRaw = String(formData.get("role") ?? "").trim();
+  const selectedRole = roleRaw === "owner" ? "owner" : "user";
+
+  if (!name || !phone) {
+    return { error: "Name and phone are required." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { error: "Your session expired. Please sign in again." };
+  }
+
+  await supabase.auth.updateUser({
+    data: { name, phone, role: selectedRole },
+  });
+
+  const existing = await getProfileForUser(supabase, user.id);
+  if (existing) {
+    const { error } = await supabase
+      .from("profiles")
+      .update({ name, phone, role: selectedRole })
+      .eq("id", user.id);
+    if (error) return { error: error.message };
+  } else {
+    const { error } = await supabase.from("profiles").insert({
+      id: user.id,
+      name,
+      role: selectedRole,
+      phone,
+    });
+    if (error) return { error: error.message };
+  }
+
+  revalidatePath("/", "layout");
+
+  const safeNext = safeNextPath(String(formData.get("next") ?? ""));
+  if (safeNext) {
+    redirect(safeNext);
+  }
+
+  redirect(isOwnerRole(selectedRole) ? "/owner/dashboard" : "/");
 }
 
 export async function signUpWithPassword(
