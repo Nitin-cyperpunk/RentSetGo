@@ -11,6 +11,10 @@ export type Database = {
           role: string;
           phone: string | null;
           created_at: string;
+          poster_generation_count: number;
+          subscription_status: string;
+          subscription_plan: string | null;
+          subscription_expiry: string | null;
         };
         Insert: {
           id: string;
@@ -18,6 +22,10 @@ export type Database = {
           role?: string;
           phone?: string | null;
           created_at?: string;
+          poster_generation_count?: number;
+          subscription_status?: string;
+          subscription_plan?: string | null;
+          subscription_expiry?: string | null;
         };
         Update: {
           id?: string;
@@ -25,6 +33,10 @@ export type Database = {
           role?: string;
           phone?: string | null;
           created_at?: string;
+          poster_generation_count?: number;
+          subscription_status?: string;
+          subscription_plan?: string | null;
+          subscription_expiry?: string | null;
         };
       };
       properties: {
@@ -48,6 +60,11 @@ export type Database = {
           contact_phone: string | null;
           contact_email?: string | null;
           amenities?: string[] | null;
+          ai_description?: string | null;
+          generated_poster_url?: string | null;
+          floor?: string | null;
+          balcony?: string | null;
+          parking?: string | null;
           created_at: string;
           updated_at: string;
           expires_at: string;
@@ -72,6 +89,11 @@ export type Database = {
           contact_phone?: string | null;
           contact_email?: string | null;
           amenities?: string[] | null;
+          ai_description?: string | null;
+          generated_poster_url?: string | null;
+          floor?: string | null;
+          balcony?: string | null;
+          parking?: string | null;
           created_at?: string;
           updated_at?: string;
           expires_at?: string;
@@ -96,6 +118,11 @@ export type Database = {
           contact_phone?: string | null;
           contact_email?: string | null;
           amenities?: string[] | null;
+          ai_description?: string | null;
+          generated_poster_url?: string | null;
+          floor?: string | null;
+          balcony?: string | null;
+          parking?: string | null;
           created_at?: string;
           updated_at?: string;
           expires_at?: string;

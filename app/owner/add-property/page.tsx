@@ -9,7 +9,7 @@ export const metadata = {
 export default function AddPropertyPage() {
   return (
     <div className="min-h-[calc(100vh-3.5rem)] bg-gradient-to-b from-emerald-50/40 via-zinc-50 to-zinc-100 dark:from-emerald-950/30 dark:via-zinc-950 dark:to-zinc-900">
-      <main className="mx-auto max-w-xl px-4 py-10 sm:px-6">
+      <main className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
         <Link
           href="/owner/dashboard"
           className="inline-flex items-center gap-1 text-sm font-medium text-emerald-800/80 hover:text-emerald-900 dark:text-emerald-400 dark:hover:text-emerald-300"

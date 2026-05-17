@@ -90,6 +90,18 @@ function parseIntOptional(raw: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+function parseAmenities(formData: FormData): string[] {
+  return formData
+    .getAll("amenities")
+    .map((a) => String(a).trim())
+    .filter(Boolean);
+}
+
+function parseOptionalText(formData: FormData, key: string): string | null {
+  const t = String(formData.get(key) ?? "").trim();
+  return t || null;
+}
+
 /** Optional non-negative integer sqft; empty input → null. */
 function parseAreaSqftField(raw: string): { area_sqft: number | null; error?: string } {
   const t = raw.trim();
@@ -161,6 +173,11 @@ export async function submitListing(formData: FormData) {
   if (mapParsed.error) {
     return { error: mapParsed.error };
   }
+  const amenities = parseAmenities(formData);
+  const floor = parseOptionalText(formData, "floor");
+  const balcony = parseOptionalText(formData, "balcony");
+  const parking = parseOptionalText(formData, "parking");
+  const ai_description = parseOptionalText(formData, "ai_description");
 
   if (!title) {
     return { error: "Title is required." };
@@ -187,6 +204,7 @@ export async function submitListing(formData: FormData) {
       owner_id: ownerId,
       title,
       description: description.trim() || null,
+      ai_description,
       price: priceRaw,
       property_type,
       deal_type,
@@ -200,6 +218,10 @@ export async function submitListing(formData: FormData) {
       furnishing: furnishing || null,
       available_status: available_status || "available",
       contact_phone: contact_phone || null,
+      amenities: amenities.length > 0 ? amenities : null,
+      floor,
+      balcony,
+      parking,
       expires_at: new Date(expires_at).toISOString(),
       updated_at: new Date().toISOString(),
     })
@@ -232,7 +254,7 @@ export async function submitListing(formData: FormData) {
   revalidatePath("/");
   revalidatePath("/owner/my-properties");
   revalidatePath("/owner/dashboard");
-  return { ok: true as const };
+  return { ok: true as const, propertyId };
 }
 
 export async function updateListing(propertyId: string, formData: FormData) {
@@ -271,6 +293,11 @@ export async function updateListing(propertyId: string, formData: FormData) {
   if (mapParsed.error) {
     return { error: mapParsed.error };
   }
+  const amenities = parseAmenities(formData);
+  const floor = parseOptionalText(formData, "floor");
+  const balcony = parseOptionalText(formData, "balcony");
+  const parking = parseOptionalText(formData, "parking");
+  const ai_description = parseOptionalText(formData, "ai_description");
 
   if (!title || !property_type) {
     return { error: "Title and property type are required." };
@@ -304,6 +331,7 @@ export async function updateListing(propertyId: string, formData: FormData) {
     .update({
       title,
       description: description.trim() || null,
+      ai_description,
       price: priceRaw,
       property_type,
       deal_type,
@@ -317,6 +345,10 @@ export async function updateListing(propertyId: string, formData: FormData) {
       furnishing: furnishing || null,
       available_status: available_status || "available",
       contact_phone: contact_phone || null,
+      amenities: amenities.length > 0 ? amenities : null,
+      floor,
+      balcony,
+      parking,
       expires_at: new Date(expires_at).toISOString(),
       updated_at: new Date().toISOString(),
     })

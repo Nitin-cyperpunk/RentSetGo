@@ -3,7 +3,9 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { getPropertyById } from "@/app/actions/properties";
+import { ListingBadges } from "@/components/ListingBadges";
 import { createClient } from "@/lib/supabase/server";
+import { parseDealType, priceSuffix } from "@/lib/listing";
 import { PropertyImageGallery } from "@/components/PropertyImageGallery";
 import { PropertyOwnerContact } from "@/components/PropertyOwnerContact";
 import { allImageUrls } from "@/types/property";
@@ -12,7 +14,7 @@ type PageProps = {
   params: Promise<{ id: string }>;
 };
 
-function formatRentInr(amount: number) {
+function formatPriceInr(amount: number) {
   try {
     return new Intl.NumberFormat("en-IN", {
       style: "currency",
@@ -70,6 +72,8 @@ export default async function PropertyDetailPage({ params }: PageProps) {
   if (property.expires_at <= new Date().toISOString()) notFound();
 
   const images = allImageUrls(property);
+  const dealType = parseDealType(property.deal_type);
+  const priceSfx = priceSuffix(dealType);
 
   return (
     <div className="min-h-[calc(100vh-3.5rem)] bg-gradient-to-b from-white via-emerald-50/30 to-zinc-50 dark:from-zinc-950 dark:via-emerald-950/25 dark:to-zinc-900">
@@ -90,7 +94,8 @@ export default async function PropertyDetailPage({ params }: PageProps) {
                 imageTitle={property.title}
               />
               {/* Property Tags */}
-              <div className="mt-5 flex flex-wrap gap-2 text-sm">
+              <div className="mt-5 flex flex-wrap items-center gap-2 text-sm">
+                <ListingBadges dealType={property.deal_type} category={property.category} />
                 <span className="rounded-full border border-emerald-200 bg-emerald-100 px-2.5 py-0.5 font-semibold text-emerald-900 shadow-sm dark:border-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-100">
                   {property.property_type}
                 </span>
@@ -215,14 +220,19 @@ export default async function PropertyDetailPage({ params }: PageProps) {
             {/* Aside Card */}
             <aside className="flex flex-col justify-between gap-6 border-l border-zinc-100 bg-gradient-to-br from-white via-emerald-50/60 to-zinc-50 p-8 dark:border-zinc-700 dark:from-zinc-900 dark:via-emerald-950/40 dark:to-zinc-950">
               <div>
-                <div className="flex items-baseline gap-3">
+                <div className="flex items-baseline gap-2">
                   <span className="text-4xl font-bold tabular-nums text-emerald-800 dark:text-emerald-400">
-                    {formatRentInr(property.price)}
+                    {formatPriceInr(property.price)}
                   </span>
-                  <span className="text-base font-medium text-zinc-600 dark:text-zinc-400">
-                    /month
-                  </span>
+                  {priceSfx ? (
+                    <span className="text-base font-medium text-zinc-600 dark:text-zinc-400">
+                      {priceSfx === "/mo" ? "/month" : priceSfx}
+                    </span>
+                  ) : null}
                 </div>
+                <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                  {dealType === "sale" ? "One-time sale price" : "Monthly rent"}
+                </p>
                 <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
                   <span className="font-medium text-zinc-700 dark:text-zinc-300">
                     Listed until
