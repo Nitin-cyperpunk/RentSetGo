@@ -16,8 +16,8 @@ import { LAYOUT_LABELS, STYLE_LABELS } from "@/lib/ai/poster/constants";
 import { fallbackPosterTaglines } from "@/lib/ai/poster-render";
 import {
   canGeneratePoster,
-  FREE_POSTER_GENERATION_LIMIT,
-  isProSubscriber,
+  getActivePlan,
+  remainingPosters,
 } from "@/lib/ai/subscription";
 import type { PosterTaglines, PropertyDescriptionInput } from "@/lib/ai/types";
 import { ensureProfileIfMissing } from "@/lib/auth/profile";
@@ -194,7 +194,9 @@ export async function generatePropertyPoster(propertyId: string): Promise<Poster
 
   const { data: profile, error: profileErr } = await supabase
     .from("profiles")
-    .select("poster_generation_count, subscription_status, subscription_expiry")
+    .select(
+      "poster_generation_count, subscription_status, subscription_plan, subscription_expiry",
+    )
     .eq("id", user.id)
     .single();
 
@@ -367,28 +369,24 @@ export async function generatePropertyPoster(propertyId: string): Promise<Poster
     );
   }
 
-  if (!isProSubscriber(profile)) {
-    const { error: countErr } = await supabase
-      .from("profiles")
-      .update({
-        poster_generation_count: (profile.poster_generation_count ?? 0) + 1,
-      })
-      .eq("id", user.id);
+  const { error: countErr } = await supabase
+    .from("profiles")
+    .update({
+      poster_generation_count: (profile.poster_generation_count ?? 0) + 1,
+    })
+    .eq("id", user.id);
 
-    if (countErr) {
-      console.error("[poster count increment]", countErr);
-    }
+  if (countErr) {
+    console.error("[poster count increment]", countErr);
   }
 
   revalidatePath(`/owner/edit/${propertyId}`);
   revalidatePath("/owner/my-properties");
 
-  const remaining = isProSubscriber(profile)
-    ? undefined
-    : Math.max(
-        0,
-        FREE_POSTER_GENERATION_LIMIT - ((profile.poster_generation_count ?? 0) + 1),
-      );
+  const afterCount = (profile.poster_generation_count ?? 0) + 1;
+  const updatedProfile = { ...profile, poster_generation_count: afterCount };
+  const left = remainingPosters(updatedProfile);
+  const remaining = left === Infinity ? undefined : left;
 
   return {
     url: posterUrl,
@@ -414,7 +412,9 @@ export async function getPosterQuota(): Promise<{
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("poster_generation_count, subscription_status, subscription_expiry")
+    .select(
+      "poster_generation_count, subscription_status, subscription_plan, subscription_expiry",
+    )
     .eq("id", user.id)
     .single();
 
@@ -422,16 +422,11 @@ export async function getPosterQuota(): Promise<{
     return { remaining: 0, isPro: false };
   }
 
-  const pro = isProSubscriber(profile);
-  if (pro) {
-    return { remaining: 999, isPro: true };
-  }
+  const plan = getActivePlan(profile);
+  const left = remainingPosters(profile);
 
   return {
-    remaining: Math.max(
-      0,
-      FREE_POSTER_GENERATION_LIMIT - (profile.poster_generation_count ?? 0),
-    ),
-    isPro: false,
+    remaining: left === Infinity ? 999 : left,
+    isPro: plan !== "free",
   };
 }

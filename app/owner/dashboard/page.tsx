@@ -81,6 +81,24 @@ export default async function OwnerDashboardPage() {
           </div>
         </div>
 
+        <Link
+          href="/owner/upgrade"
+          className="mb-8 flex flex-col gap-2 rounded-2xl border border-amber-400/30 bg-gradient-to-r from-zinc-900 via-zinc-950 to-black p-6 text-[#f5f0e8] shadow-lg transition hover:border-amber-400/50 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-amber-400/90">
+              RentSetGo Pro
+            </p>
+            <p className="mt-1 text-lg font-bold">Upgrade your AI marketing</p>
+            <p className="mt-1 text-sm text-zinc-400">
+              HD posters, no watermark, 100 generations/month — from ₹299
+            </p>
+          </div>
+          <span className="inline-flex shrink-0 items-center justify-center rounded-xl bg-gradient-to-r from-[#d4a574] to-[#b8864a] px-5 py-2.5 text-sm font-semibold text-zinc-900">
+            Upgrade Plan →
+          </span>
+        </Link>
+
         <div className="grid gap-4 sm:grid-cols-3">
           <Link
             href="/owner/add-property"

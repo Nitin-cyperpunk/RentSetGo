@@ -68,6 +68,13 @@ export const notify = {
       description: "Check your inbox if an account exists for that email.",
     });
   },
+  subscriptionActivated(planName?: string) {
+    toast.success("You're on Pro!", {
+      description: planName
+        ? `${planName} is active — premium AI posters unlocked.`
+        : "Premium AI posters and automation are unlocked.",
+    });
+  },
   error(message: string) {
     toast.error(message);
   },

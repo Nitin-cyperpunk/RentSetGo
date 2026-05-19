@@ -52,7 +52,9 @@ export function PosterGenerator({
       const result = await generatePropertyPoster(propertyId);
       if (result.code === "UPGRADE") {
         setShowUpgrade(true);
-        const msg = result.error ?? "Upgrade to generate more posters.";
+        const msg =
+          result.error ??
+          "You've reached your free AI poster limit. Upgrade to continue.";
         setError(msg);
         notify.error(msg);
         return;
