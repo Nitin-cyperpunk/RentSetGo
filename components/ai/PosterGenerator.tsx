@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { generatePropertyPoster, getPosterQuota } from "@/app/actions/ai";
+import { notify } from "@/lib/toast";
 import { AISectionCard } from "@/components/ai/AISectionCard";
 import { GenerateButton } from "@/components/ai/GenerateButton";
 import { PosterPreview } from "@/components/ai/PosterPreview";
@@ -28,6 +29,9 @@ export function PosterGenerator({
   const [error, setError] = useState<string | null>(null);
   const [remaining, setRemaining] = useState<number | null>(null);
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [styleLabel, setStyleLabel] = useState<string | null>(null);
+  const [layoutLabel, setLayoutLabel] = useState<string | null>(null);
+  const [hadPoster, setHadPoster] = useState(Boolean(initialPosterUrl));
 
   useEffect(() => {
     setPosterUrl(initialPosterUrl ?? null);
@@ -48,16 +52,28 @@ export function PosterGenerator({
       const result = await generatePropertyPoster(propertyId);
       if (result.code === "UPGRADE") {
         setShowUpgrade(true);
-        setError(result.error ?? "Upgrade to generate more posters.");
+        const msg = result.error ?? "Upgrade to generate more posters.";
+        setError(msg);
+        notify.error(msg);
         return;
       }
       if (result.error) {
         setError(result.error);
+        notify.error(result.error);
         return;
       }
       if (result.url) {
+        const isRegen = hadPoster;
         setPosterUrl(result.url);
+        setHadPoster(true);
         if (result.remaining != null) setRemaining(result.remaining);
+        setStyleLabel(result.styleLabel ?? null);
+        setLayoutLabel(result.layoutLabel ?? null);
+        if (isRegen) {
+          notify.posterRegenerated();
+        } else {
+          notify.posterGenerated(result.styleLabel, result.layoutLabel);
+        }
       }
     } finally {
       setPending(false);
@@ -75,7 +91,7 @@ export function PosterGenerator({
       <AISectionCard
         icon="🎨"
         title="AI Property Poster Generator"
-        subtitle="Instagram & WhatsApp-ready creatives with your photo, rent, and amenities."
+        subtitle="Each generate picks a fresh style — bold promo, cinematic, glass, dark hero & more."
       >
         {disabledReason ? (
           <p className="rounded-lg border border-amber-200/80 bg-amber-50/80 px-4 py-3 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200">
@@ -90,6 +106,12 @@ export function PosterGenerator({
                       remaining === 1 ? "" : "s"
                     } left`
                   : "No free generations left"}
+              </p>
+            ) : null}
+
+            {styleLabel || layoutLabel ? (
+              <p className="mb-2 text-xs font-medium text-emerald-800 dark:text-emerald-300">
+                {[styleLabel, layoutLabel].filter(Boolean).join(" · ")}
               </p>
             ) : null}
 

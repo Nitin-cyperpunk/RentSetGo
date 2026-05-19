@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { safeNextPath } from "@/lib/auth/urls";
+import { pathWithToast } from "@/lib/toast";
 import {
   ensureProfileIfMissing,
   getProfileForUser,
@@ -45,10 +46,12 @@ export async function signInWithPassword(
 
   const safeNext = safeNextPath(String(formData.get("next") ?? ""));
   if (safeNext) {
-    redirect(safeNext);
+    redirect(pathWithToast(safeNext, "welcome-back"));
   }
 
-  redirect(isOwnerRole(profile?.role) ? "/owner/dashboard" : "/");
+  redirect(
+    pathWithToast(isOwnerRole(profile?.role) ? "/owner/dashboard" : "/", "welcome-back"),
+  );
 }
 
 export async function completeProfile(
@@ -166,7 +169,9 @@ export async function signUpWithPassword(
     }
 
     const profile = await getProfileForUser(supabase, userId);
-    redirect(isOwnerRole(profile?.role) ? "/owner/dashboard" : "/");
+    redirect(
+      pathWithToast(isOwnerRole(profile?.role) ? "/owner/dashboard" : "/", "welcome"),
+    );
   }
 
   // Email confirmation enabled: no session yet — metadata is stored for ensureProfileIfMissing on first login.
@@ -237,5 +242,7 @@ export async function updatePassword(
     profile = await ensureProfileIfMissing(supabase, user);
   }
 
-  redirect(isOwnerRole(profile?.role) ? "/owner/dashboard" : "/");
+  redirect(
+    pathWithToast(isOwnerRole(profile?.role) ? "/owner/dashboard" : "/", "password-updated"),
+  );
 }

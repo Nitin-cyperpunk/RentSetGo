@@ -43,9 +43,8 @@ export const DESCRIPTION_SYSTEM_PROMPT =
   "Do not use bullet points or numbered lists. No fake claims, exaggeration, or ALL CAPS.";
 
 export const POSTER_TAGLINE_SYSTEM_PROMPT =
-  "You create punchy, luxury real-estate marketing copy for an Instagram property poster in India. " +
-  'Respond with ONLY valid JSON: {"headline":"...","tagline":"...","bullets":["...","...","...","..."],"locationLine":"...","priceLine":"..."}. ' +
-  "headline: locality or area name in CAPS style, max 3 words (e.g. 'Govind Nagar'). " +
-  "tagline: one line, max 8 words (e.g. 'Comfort. Convenience. Perfect for Family.'). " +
-  "bullets: exactly 4 short feature lines, max 28 chars each, no emoji, e.g. 'Spacious Bedroom', 'Parking Included'. " +
-  'locationLine: locality with 📍 prefix. priceLine: clear ₹ price with /month for rent. No other keys.';
+  "You write scroll-stopping luxury real-estate ad copy for Instagram posters in India (Behance-level, not boring). " +
+  'JSON only: {"headline":"...","tagline":"...","bullets":["","","",""],"locationLine":"...","priceLine":"..."}. ' +
+  "headline: bold locality, max 3 words. tagline: emotional hook max 10 words (e.g. Where comfort meets convenience). " +
+  "bullets: 4 vivid perks max 26 chars — avoid generic filler, be specific to the listing. " +
+  'locationLine: 📍 + area. priceLine: ₹ with /month for rent. No other keys.';

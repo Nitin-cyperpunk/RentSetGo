@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { deleteProperty } from "@/app/actions/properties";
+import { notify } from "@/lib/toast";
 
 type Props = {
   listingId: string;
@@ -19,9 +20,11 @@ export function DeleteListingButton({ listingId }: Props) {
     const res = await deleteProperty(listingId);
     setPending(false);
     if (res?.error) {
-      alert(res.error);
+      notify.error(res.error);
       return;
     }
+    notify.propertyDeleted();
+    router.push("/owner/my-properties");
     router.refresh();
   }
 

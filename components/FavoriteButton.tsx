@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { togglePropertyFavorite } from "@/app/actions/favorites";
+import { notify } from "@/lib/toast";
 
 type Props = {
   propertyId: string;
@@ -25,11 +26,14 @@ export function FavoriteButton({ propertyId, initialFavorited = false, className
     try {
       const res = await togglePropertyFavorite(propertyId);
       if (res && "error" in res && res.error) {
-        alert(res.error);
+        notify.error(res.error);
         return;
       }
       if (res && "favorited" in res) {
-        setFavorited(res.favorited === true);
+        const next = res.favorited === true;
+        setFavorited(next);
+        if (next) notify.favoriteAdded();
+        else notify.favoriteRemoved();
       }
       router.refresh();
     } finally {

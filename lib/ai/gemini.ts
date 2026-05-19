@@ -9,20 +9,25 @@ export function getGeminiConfig() {
 function stripMarkdownFences(text: string): string {
   const trimmed = text.trim();
   if (!trimmed.startsWith("```")) return trimmed;
-  return trimmed.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+  return trimmed
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/, "")
+    .trim();
 }
 
 export async function chatCompletion(
   system: string,
   user: string,
-  options?: { maxTokens?: number; temperature?: number },
+  options?: { maxTokens?: number; temperature?: number }
 ): Promise<{ text?: string; error?: string }> {
   const { key, model } = getGeminiConfig();
   if (!key) {
     return { error: "GEMINI_API_KEY not configured" };
   }
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
+    model
+  )}:generateContent?key=${encodeURIComponent(key)}`;
 
   try {
     const res = await fetch(url, {

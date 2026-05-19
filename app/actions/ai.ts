@@ -9,7 +9,11 @@ import {
   POSTER_TAGLINE_SYSTEM_PROMPT,
 } from "@/lib/ai/description-prompt";
 import { chatCompletion, getGeminiConfig } from "@/lib/ai/gemini";
-import { fallbackPosterTaglines, renderPropertyPoster } from "@/lib/ai/poster-render";
+import { analyzePropertyImages } from "@/lib/ai/poster/analyze-images";
+import { generateCreativeBrief, mergeCreativeBrief } from "@/lib/ai/poster/creative-brief";
+import { composePropertyPoster } from "@/lib/ai/poster/compose";
+import { LAYOUT_LABELS, STYLE_LABELS } from "@/lib/ai/poster/constants";
+import { fallbackPosterTaglines } from "@/lib/ai/poster-render";
 import {
   canGeneratePoster,
   FREE_POSTER_GENERATION_LIMIT,
@@ -169,6 +173,8 @@ export type PosterGenerationResult = {
   error?: string;
   code?: "UPGRADE" | "NO_IMAGE" | "UNAUTHORIZED";
   remaining?: number;
+  styleLabel?: string;
+  layoutLabel?: string;
 };
 
 /**
@@ -227,35 +233,82 @@ export async function generatePropertyPoster(propertyId: string): Promise<Poster
   }
 
   const dealType = parseDealType(typed.deal_type);
+  const priceLine = formatInrPrice(typed.price, dealType);
+  const location = typed.location || typed.address || "Nashik";
+
+  const descriptionInput: PropertyDescriptionInput = {
+    title: typed.title,
+    property_type: typed.property_type,
+    deal_type: dealType,
+    category: parseListingCategory(typed.category),
+    price: typed.price,
+    location: typed.location ?? undefined,
+    address: typed.address ?? undefined,
+    bedrooms: typed.bedrooms,
+    bathrooms: typed.bathrooms,
+    area_sqft: typed.area_sqft,
+    furnishing: typed.furnishing ?? undefined,
+    floor: typed.floor ?? undefined,
+    balcony: typed.balcony ?? undefined,
+    parking: typed.parking ?? undefined,
+    amenities: typed.amenities ?? undefined,
+  };
 
   let taglines: PosterTaglines;
   try {
     taglines = await generateTaglines(typed);
   } catch (e) {
     console.error("[generatePropertyPoster taglines]", e);
-    taglines = fallbackPosterTaglines(
-      typed.title,
-      typed.location,
-      formatInrPrice(typed.price, dealType),
-      typed.furnishing,
-    );
+    taglines = fallbackPosterTaglines(typed.title, location, priceLine, typed.furnishing);
   }
 
-  let png: Buffer;
+  let analysis;
   try {
-    png = await renderPropertyPoster(images, taglines, {
-      dealType,
-      propertyType: typed.property_type,
-      title: typed.title,
-      location: typed.location,
-      priceDisplay: `₹${typed.price.toLocaleString("en-IN")}`,
-      floor: typed.floor,
-      furnishing: typed.furnishing,
-      parking: typed.parking,
-      balcony: typed.balcony,
-      bedrooms: typed.bedrooms,
-      contactPhone: typed.contact_phone,
-    });
+    analysis = await analyzePropertyImages(images);
+  } catch (e) {
+    console.error("[generatePropertyPoster analyze]", e);
+    analysis = await analyzePropertyImages([images[0]!]);
+  }
+
+  const lastStyle = typed.last_poster_style_id;
+  const lastLayout = typed.last_poster_layout_id;
+
+  let brief;
+  try {
+    brief = await generateCreativeBrief(
+      descriptionInput,
+      analysis,
+      taglines,
+      lastStyle,
+      lastLayout,
+    );
+  } catch (e) {
+    console.error("[generatePropertyPoster brief]", e);
+    brief = mergeCreativeBrief(taglines, analysis, null, lastStyle, lastLayout);
+  }
+
+  const renderMeta = {
+    dealType,
+    propertyType: typed.property_type,
+    title: typed.title,
+    location: typed.location,
+    priceDisplay: `₹${typed.price.toLocaleString("en-IN")}`,
+    floor: typed.floor,
+    furnishing: typed.furnishing,
+    parking: typed.parking,
+    balcony: typed.balcony,
+    bedrooms: typed.bedrooms,
+    contactPhone: typed.contact_phone,
+  };
+
+  let png: Buffer;
+  let styleId = brief.styleId;
+  let layoutId = brief.layoutId;
+  try {
+    const composed = await composePropertyPoster(images, brief, renderMeta);
+    png = composed.buffer;
+    styleId = composed.styleId;
+    layoutId = composed.layoutId;
   } catch (e) {
     console.error("[generatePropertyPoster render]", e);
     return { error: "Could not create poster image. Try again." };
@@ -278,18 +331,40 @@ export async function generatePropertyPoster(propertyId: string): Promise<Poster
   const { data: pub } = supabase.storage.from(bucket).getPublicUrl(path);
   const posterUrl = pub.publicUrl;
 
-  const { error: updateErr } = await supabase
+  const updatedAt = new Date().toISOString();
+  const posterFields = {
+    generated_poster_url: posterUrl,
+    last_poster_style_id: styleId,
+    last_poster_layout_id: layoutId,
+    updated_at: updatedAt,
+  };
+
+  let { error: updateErr } = await supabase
     .from("properties")
-    .update({
-      generated_poster_url: posterUrl,
-      updated_at: new Date().toISOString(),
-    })
+    .update(posterFields)
     .eq("id", propertyId)
     .eq("owner_id", user.id);
 
   if (updateErr) {
-    console.error("[poster property update]", updateErr);
-    return { error: "Poster saved but listing update failed." };
+    console.error("[poster property update]", updateErr.message, updateErr);
+    const { error: fallbackErr } = await supabase
+      .from("properties")
+      .update({
+        generated_poster_url: posterUrl,
+        updated_at: updatedAt,
+      })
+      .eq("id", propertyId)
+      .eq("owner_id", user.id);
+
+    if (fallbackErr) {
+      console.error("[poster property update fallback]", fallbackErr.message, fallbackErr);
+      return {
+        error: `Poster uploaded but could not link to listing: ${fallbackErr.message}`,
+      };
+    }
+    console.warn(
+      "[poster] Saved URL without style columns — run migration 20260518120000_poster_style_tracking.sql",
+    );
   }
 
   if (!isProSubscriber(profile)) {
@@ -315,7 +390,12 @@ export async function generatePropertyPoster(propertyId: string): Promise<Poster
         FREE_POSTER_GENERATION_LIMIT - ((profile.poster_generation_count ?? 0) + 1),
       );
 
-  return { url: posterUrl, remaining };
+  return {
+    url: posterUrl,
+    remaining,
+    styleLabel: STYLE_LABELS[styleId],
+    layoutLabel: LAYOUT_LABELS[layoutId],
+  };
 }
 
 export async function getPosterQuota(): Promise<{

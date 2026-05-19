@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   ensureProfileIfMissing,
   getProfileForUser,
+  hasProfilePhone,
   isOwnerRole,
   type ProfileRow,
 } from "@/lib/auth/profile";
@@ -29,7 +30,7 @@ export async function resolvePostAuthRedirect(
 
   const safeNext = safeNextPath(nextRaw ?? undefined);
 
-  if (profile && !profile.phone?.trim()) {
+  if (profile && !hasProfilePhone(profile.phone)) {
     const complete = safeNext
       ? `/signup/complete?next=${encodeURIComponent(safeNext)}`
       : "/signup/complete";

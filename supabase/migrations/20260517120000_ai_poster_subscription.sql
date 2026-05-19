@@ -4,7 +4,9 @@ alter table public.properties
   add column if not exists ai_description text,
   add column if not exists floor text,
   add column if not exists balcony text,
-  add column if not exists parking text;
+  add column if not exists parking text,
+  add column if not exists last_poster_style_id text,
+  add column if not exists last_poster_layout_id text;
 
 alter table public.profiles
   add column if not exists poster_generation_count int not null default 0,

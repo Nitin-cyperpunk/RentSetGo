@@ -62,6 +62,8 @@ export type Database = {
           amenities?: string[] | null;
           ai_description?: string | null;
           generated_poster_url?: string | null;
+          last_poster_style_id?: string | null;
+          last_poster_layout_id?: string | null;
           floor?: string | null;
           balcony?: string | null;
           parking?: string | null;
@@ -91,6 +93,8 @@ export type Database = {
           amenities?: string[] | null;
           ai_description?: string | null;
           generated_poster_url?: string | null;
+          last_poster_style_id?: string | null;
+          last_poster_layout_id?: string | null;
           floor?: string | null;
           balcony?: string | null;
           parking?: string | null;
@@ -120,6 +124,8 @@ export type Database = {
           amenities?: string[] | null;
           ai_description?: string | null;
           generated_poster_url?: string | null;
+          last_poster_style_id?: string | null;
+          last_poster_layout_id?: string | null;
           floor?: string | null;
           balcony?: string | null;
           parking?: string | null;

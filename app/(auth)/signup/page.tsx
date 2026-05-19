@@ -2,7 +2,12 @@ import { redirect } from "next/navigation";
 
 import { AuthCard } from "@/components/auth/AuthCard";
 import { AuthShell } from "@/components/auth/AuthShell";
-import { ensureProfileIfMissing, getProfileForUser, isOwnerRole } from "@/lib/auth/profile";
+import {
+  ensureProfileIfMissing,
+  getProfileForUser,
+  hasProfilePhone,
+  isOwnerRole,
+} from "@/lib/auth/profile";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata = {
@@ -19,7 +24,7 @@ export default async function SignupPage() {
     if (!profile) {
       profile = await ensureProfileIfMissing(supabase, user);
     }
-    if (profile && !profile.phone?.trim()) {
+    if (profile && !hasProfilePhone(profile.phone)) {
       redirect("/signup/complete");
     }
     redirect(isOwnerRole(profile?.role) ? "/owner/dashboard" : "/");

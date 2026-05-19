@@ -318,13 +318,16 @@ export async function updateListing(propertyId: string, formData: FormData) {
     keepUrls = [];
   }
 
-  const files = formData.getAll("images");
-  const uploaded = await uploadImages(storage, ownerId, files);
+  const imageFiles = formData.getAll("images").filter(
+    (f): f is File => f instanceof File && f.size > 0,
+  );
+  const uploaded = await uploadImages(storage, ownerId, imageFiles);
   if (uploaded.error) {
     return { error: uploaded.error };
   }
 
-  const allUrls = [...keepUrls, ...uploaded.urls];
+  /** New file picks replace the gallery — do not append to kept URLs (was causing 5+5=10). */
+  const allUrls = imageFiles.length > 0 ? uploaded.urls : keepUrls;
 
   const { error: upErr } = await db
     .from("properties")

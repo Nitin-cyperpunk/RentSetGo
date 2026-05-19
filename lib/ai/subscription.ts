@@ -1,4 +1,4 @@
-export const FREE_POSTER_GENERATION_LIMIT = 4;
+export const FREE_POSTER_GENERATION_LIMIT = 6;
 
 export type SubscriptionStatus = "free" | "active" | "canceled" | "past_due";
 
@@ -21,5 +21,8 @@ export function canGeneratePoster(profile: ProfileSubscription): boolean {
 
 export function remainingFreePosters(profile: ProfileSubscription): number {
   if (isProSubscriber(profile)) return Infinity;
-  return Math.max(0, FREE_POSTER_GENERATION_LIMIT - (profile.poster_generation_count ?? 0));
+  return Math.max(
+    0,
+    FREE_POSTER_GENERATION_LIMIT - (profile.poster_generation_count ?? 0)
+  );
 }

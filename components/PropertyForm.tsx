@@ -14,6 +14,7 @@ import {
   type DealType,
   type ListingCategory,
 } from "@/lib/listing";
+import { notify } from "@/lib/toast";
 import { allImageUrls, type PropertyWithImages } from "@/types/property";
 
 const FORM_ID = "property-listing-form";
@@ -65,8 +66,10 @@ export function PropertyForm({ property, showNewListingBanner }: Props) {
       }
       if (result?.ok) {
         if (!isEdit && "propertyId" in result && result.propertyId) {
+          notify.propertyPublished();
           router.push(`/owner/edit/${result.propertyId}?new=1`);
         } else {
+          notify.propertyUpdated();
           router.push("/owner/my-properties");
         }
         router.refresh();
@@ -373,15 +376,18 @@ export function PropertyForm({ property, showNewListingBanner }: Props) {
           accept="image/*"
           multiple
           onChange={(e) => {
-            const added = e.target.files?.length ?? 0;
-            const base = property?.property_images?.length ?? 0;
-            setImageCount(base + added);
+            const picked = e.target.files?.length ?? 0;
+            if (picked > 0) {
+              setImageCount(picked);
+            } else {
+              setImageCount(property?.property_images?.length ?? 0);
+            }
           }}
           className="w-full text-sm text-zinc-600 file:mr-4 file:rounded-lg file:border-0 file:bg-zinc-100 file:px-4 file:py-2.5 file:text-sm file:font-medium file:text-zinc-800 hover:file:bg-zinc-200 dark:text-zinc-400 dark:file:bg-zinc-800 dark:file:text-zinc-100 dark:hover:file:bg-zinc-700"
         />
         <p className="text-xs text-zinc-500 dark:text-zinc-400">
           {isEdit
-            ? "Upload new images to add them. Saving rebuilds the gallery from kept URLs plus new uploads."
+            ? "Choose new photos only if you want to replace all current photos. Saving with new files replaces the gallery (5 new files → 5 photos, not 10)."
             : "Stored in Supabase Storage — required for AI poster generation after publish."}
         </p>
       </div>

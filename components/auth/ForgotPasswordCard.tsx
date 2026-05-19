@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 
 import { requestPasswordReset } from "@/app/actions/auth";
+import { notify } from "@/lib/toast";
 import { AuthAlert } from "@/components/auth/AuthAlert";
 import { authInputClass, authLabelClass, authPrimaryBtnClass } from "@/components/auth/auth-styles";
 import { prefersReducedMotion } from "@/lib/motion";
@@ -33,7 +34,10 @@ export function ForgotPasswordCard() {
     try {
       const result = await requestPasswordReset(new FormData(e.currentTarget));
       if (result?.error) setError(result.error);
-      else if (result?.ok) setOk(true);
+      else if (result?.ok) {
+        setOk(true);
+        notify.resetEmailSent();
+      }
     } finally {
       setPending(false);
     }

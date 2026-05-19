@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 
+import { AppToaster } from "@/components/app-toaster";
 import { AppShell } from "@/components/AppShell";
 import { Navbar } from "@/components/Navbar";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -57,6 +58,7 @@ export default function RootLayout({
     >
       <body className="app-backdrop flex min-h-full flex-col font-sans text-foreground antialiased">
         <ThemeProvider>
+          <AppToaster />
           <ThemeToggle />
           <AppShell footer={<SiteFooter />} navbar={<Navbar />}>
             {children}

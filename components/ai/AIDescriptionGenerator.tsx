@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 
 import { generateListingDescription } from "@/app/actions/ai";
+import { notify } from "@/lib/toast";
 import { AISectionCard } from "@/components/ai/AISectionCard";
 import { GenerateButton } from "@/components/ai/GenerateButton";
 
@@ -114,6 +115,7 @@ export function AIDescriptionGenerator({
       if (result.text) {
         onDescriptionChange(result.text);
         onAiDescriptionChange?.(result.text);
+        notify.descriptionGenerated(Boolean(result.usedAi));
         setHint(
           result.usedAi
             ? "AI description ready — edit before publishing."

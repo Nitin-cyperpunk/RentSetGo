@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import { parseDealType, priceSuffix } from "@/lib/listing";
 import { PropertyImageGallery } from "@/components/PropertyImageGallery";
 import { PropertyOwnerContact } from "@/components/PropertyOwnerContact";
-import { allImageUrls } from "@/types/property";
+import { galleryImages } from "@/types/property";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -71,9 +71,12 @@ export default async function PropertyDetailPage({ params }: PageProps) {
 
   if (property.expires_at <= new Date().toISOString()) notFound();
 
-  const images = allImageUrls(property);
+  const images = galleryImages(property);
   const dealType = parseDealType(property.deal_type);
   const priceSfx = priceSuffix(dealType);
+  /** Sale listings under ₹1L are almost always rent amounts saved by mistake */
+  const salePriceLooksLikeRent =
+    dealType === "sale" && property.price > 0 && property.price < 100_000;
 
   return (
     <div className="min-h-[calc(100vh-3.5rem)] bg-gradient-to-b from-white via-emerald-50/30 to-zinc-50 dark:from-zinc-950 dark:via-emerald-950/25 dark:to-zinc-900">
@@ -86,9 +89,9 @@ export default async function PropertyDetailPage({ params }: PageProps) {
             <span aria-hidden>←</span> All listings
           </Link>
         </div>
-        <div className="overflow-hidden rounded-2xl border border-zinc-200/80 bg-white/95 shadow-xl shadow-zinc-200/50 dark:border-zinc-700/80 dark:bg-zinc-900/90 dark:shadow-black/40">
-          <div className="lg:grid lg:grid-cols-[1.45fr_0.8fr] gap-x-10">
-            <div className="p-6 md:p-10 pb-6">
+        <div className="rounded-2xl border border-zinc-200/80 bg-white/95 shadow-xl shadow-zinc-200/50 dark:border-zinc-700/80 dark:bg-zinc-900/90 dark:shadow-black/40">
+          <div className="lg:grid lg:grid-cols-[1.45fr_0.85fr] lg:items-start">
+            <div className="min-w-0 p-6 pb-10 md:p-10 md:pb-12">
               <PropertyImageGallery
                 images={images}
                 imageTitle={property.title}
@@ -111,7 +114,7 @@ export default async function PropertyDetailPage({ params }: PageProps) {
                 )}
               </div>
               {/* Title & Location */}
-              <h1 className="mt-6 text-3xl font-extrabold tracking-tight text-zinc-900 md:text-4xl dark:text-zinc-50">
+              <h1 className="mt-6 break-words text-2xl font-extrabold leading-tight tracking-tight text-zinc-900 sm:text-3xl md:text-4xl dark:text-zinc-50">
                 {property.title}
               </h1>
               {property.location && (
@@ -218,10 +221,21 @@ export default async function PropertyDetailPage({ params }: PageProps) {
                 )}
             </div>
             {/* Aside Card */}
-            <aside className="flex flex-col justify-between gap-6 border-l border-zinc-100 bg-gradient-to-br from-white via-emerald-50/60 to-zinc-50 p-8 dark:border-zinc-700 dark:from-zinc-900 dark:via-emerald-950/40 dark:to-zinc-950">
+            <aside className="flex flex-col gap-6 border-t border-zinc-200 bg-zinc-50/90 p-6 md:p-8 lg:sticky lg:top-6 lg:border-t-0 lg:border-l lg:self-start dark:border-zinc-700 dark:bg-zinc-900/50">
               <div>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-4xl font-bold tabular-nums text-emerald-800 dark:text-emerald-400">
+                {salePriceLooksLikeRent ? (
+                  <p
+                    className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5 text-sm leading-snug text-amber-950 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-100"
+                    role="status"
+                  >
+                    Marked <strong>For sale</strong>, but ₹
+                    {property.price.toLocaleString("en-IN")} is typical for{" "}
+                    <strong>monthly rent</strong>. Edit the listing and choose{" "}
+                    <strong>Rent</strong> if that is what you meant.
+                  </p>
+                ) : null}
+                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                  <span className="text-3xl font-bold tabular-nums text-emerald-800 sm:text-4xl dark:text-emerald-400">
                     {formatPriceInr(property.price)}
                   </span>
                   {priceSfx ? (
@@ -230,8 +244,8 @@ export default async function PropertyDetailPage({ params }: PageProps) {
                     </span>
                   ) : null}
                 </div>
-                <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                  {dealType === "sale" ? "One-time sale price" : "Monthly rent"}
+                <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+                  {dealType === "sale" ? "Sale price" : "Monthly rent"}
                 </p>
                 <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
                   <span className="font-medium text-zinc-700 dark:text-zinc-300">

@@ -12,13 +12,32 @@ export type ProfileRow = {
   created_at: string;
 };
 
+/** DB or metadata may return phone as string or number — normalize before .trim(). */
+export function normalizePhoneString(phone: unknown): string | null {
+  if (phone == null) return null;
+  if (typeof phone === "string") {
+    const t = phone.trim();
+    return t || null;
+  }
+  if (typeof phone === "number" && Number.isFinite(phone)) {
+    const t = String(Math.trunc(phone)).trim();
+    return t || null;
+  }
+  return null;
+}
+
+export function hasProfilePhone(phone: unknown): boolean {
+  return Boolean(normalizePhoneString(phone));
+}
+
 export async function getProfileForUser(
   supabase: SupabaseClient,
   userId: string
 ): Promise<ProfileRow | null> {
   const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).maybeSingle();
   if (error || !data) return null;
-  return data as ProfileRow;
+  const row = data as ProfileRow;
+  return { ...row, phone: normalizePhoneString(row.phone) };
 }
 
 /**
@@ -39,8 +58,7 @@ export async function ensureProfileIfMissing(
       : (user.email?.split("@")[0] ?? "User");
   const roleRaw = typeof meta?.role === "string" ? meta.role : "user";
   const role = roleRaw === "owner" ? "owner" : "user";
-  const phoneRaw = typeof meta?.phone === "string" ? meta.phone.trim() : "";
-  const phone = phoneRaw || null;
+  const phone = normalizePhoneString(meta?.phone);
 
   const { error } = await supabase.from("profiles").insert({
     id: user.id,
