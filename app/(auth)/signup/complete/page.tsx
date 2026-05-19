@@ -28,9 +28,13 @@ export default async function SignupCompletePage({ searchParams }: PageProps) {
   const sp = await searchParams;
   const nextPath = safeNextPath(sp.next);
 
-  if (profile && hasProfilePhone(profile.phone)) {
+  const profileWithPhone =
+    profile && hasProfilePhone(profile.phone) ? profile : null;
+  if (profileWithPhone) {
     if (nextPath) redirect(nextPath);
-    redirect(isOwnerRole(profile.role) ? "/owner/dashboard" : "/");
+    redirect(
+      isOwnerRole(profileWithPhone.role) ? "/owner/dashboard" : "/",
+    );
   }
 
   const defaultName =
