@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import { CompleteProfileForm } from "@/components/auth/CompleteProfileForm";
 import { AuthShell } from "@/components/auth/AuthShell";
-import { getProfileForUser, isOwnerRole } from "@/lib/auth/profile";
+import { getProfileForUser, hasProfilePhone, isOwnerRole } from "@/lib/auth/profile";
 import { safeNextPath } from "@/lib/auth/urls";
 import { createClient } from "@/lib/supabase/server";
 
@@ -28,7 +28,7 @@ export default async function SignupCompletePage({ searchParams }: PageProps) {
   const sp = await searchParams;
   const nextPath = safeNextPath(sp.next);
 
-  if (profile?.phone?.trim()) {
+  if (hasProfilePhone(profile?.phone)) {
     if (nextPath) redirect(nextPath);
     redirect(isOwnerRole(profile.role) ? "/owner/dashboard" : "/");
   }
