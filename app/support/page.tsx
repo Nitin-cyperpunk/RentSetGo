@@ -2,11 +2,15 @@ import type { Metadata } from "next";
 
 import { SupportSection } from "@/components/SupportSection";
 
-export const metadata: Metadata = {
+import { buildPageMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = buildPageMetadata({
   title: "Support RentSetGo",
   description:
-    "Optional support for RentSetGo — help keep Nashik's owner-first rental platform running.",
-};
+    "Optional support for RentSetGo — help keep India's owner-first rental and AI marketing platform running.",
+  path: "/support",
+  keywords: ["support RentSetGo", "rental platform India"],
+});
 
 export default function SupportPage() {
   return (

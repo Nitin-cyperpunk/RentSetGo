@@ -7,7 +7,7 @@ export function posterFileName(title: string, propertyId?: string): string {
       .replace(/^-+|-+$/g, "")
       .slice(0, 48) || "listing";
   const idPart = propertyId ? `-${propertyId.slice(0, 8)}` : "";
-  return `rentsetgo-${slug}${idPart}-poster.png`;
+  return `${slug}${idPart}-rentsetgo.png`;
 }
 
 export async function fetchPosterBlob(posterUrl: string): Promise<Blob> {

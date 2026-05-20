@@ -10,11 +10,22 @@ import { HeroSection } from "@/components/home/HeroSection";
 import { listActiveProperties } from "@/lib/queries/properties";
 import { createClient } from "@/lib/supabase/server";
 
-export const metadata: Metadata = {
-  title: "Flats for Rent in Nashik",
+import { buildPageMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = buildPageMetadata({
+  title: "Flats for Rent in Nashik & India | AI Property Listings",
   description:
-    "Browse latest rental properties in Nashik including 1BHK, 2BHK flats in Indra Nagar, Canada Corner and more.",
-};
+    "Browse rental flats and houses in Nashik and across India. List properties, generate AI real-estate posters, and contact owners directly on RentSetGo.",
+  path: "/",
+  keywords: [
+    "flats for rent Nashik",
+    "property listings Mumbai",
+    "apartment rental platform",
+    "AI real-estate posters",
+    "house rent website India",
+    "rental marketplace",
+  ],
+});
 
 /** Search params + fresh Supabase reads on every request. */
 export const dynamic = "force-dynamic";

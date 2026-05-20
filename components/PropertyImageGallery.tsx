@@ -37,12 +37,19 @@ function EnlargedModal({ src, onClose }: { src: string; onClose: () => void }) {
   );
 }
 
+function galleryImageAlt(imageTitle: string, location?: string | null, index?: number): string {
+  const loc = location?.trim() ? ` in ${location.trim()}` : "";
+  const suffix = index != null && index > 0 ? ` — photo ${index + 1}` : "";
+  return `${imageTitle}${loc} — RentSetGo listing${suffix}`;
+}
+
 type Props = {
   images: GalleryImage[];
   imageTitle: string;
+  location?: string | null;
 };
 
-export function PropertyImageGallery({ images, imageTitle }: Props) {
+export function PropertyImageGallery({ images, imageTitle, location }: Props) {
   const [enlarged, setEnlarged] = useState<string | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
 
@@ -68,7 +75,7 @@ export function PropertyImageGallery({ images, imageTitle }: Props) {
               {main ? (
                 <Image
                   src={main}
-                  alt={imageTitle || "Property image"}
+                  alt={galleryImageAlt(imageTitle || "Property", location)}
                   fill
                   className="object-cover transition duration-300 group-hover:scale-[1.02]"
                   priority
@@ -99,7 +106,14 @@ export function PropertyImageGallery({ images, imageTitle }: Props) {
                     onClick={() => setActiveIndex(i)}
                     aria-label={`Photo ${i + 1} of ${images.length}`}
                   >
-                    <Image src={img.url} alt="" fill className="object-cover" sizes="96px" />
+                    <Image
+                      src={img.url}
+                      alt={galleryImageAlt(imageTitle || "Property", location, i)}
+                      fill
+                      className="object-cover"
+                      sizes="96px"
+                      loading="lazy"
+                    />
                   </button>
                 ))}
               </div>

@@ -8,7 +8,8 @@ const AUTO_MS = 4500;
 
 type Props = {
   urls: string[];
-  propertyId: string;
+  detailHref: string;
+  imageAlt?: string;
   sizes: string;
   /** Tailwind aspect class, e.g. `aspect-[16/10]` for owner cards */
   aspectClass?: string;
@@ -19,7 +20,8 @@ type Props = {
 
 export function PropertyCardCarousel({
   urls,
-  propertyId,
+  detailHref,
+  imageAlt = "Property listing",
   sizes,
   aspectClass = "aspect-[4/3]",
   isLoggedIn = true,
@@ -50,26 +52,11 @@ export function PropertyCardCarousel({
     return () => window.clearInterval(id);
   }, [n, paused]);
 
-  const detailHref = `/property/${propertyId}`;
-
-  const ImageNav = ({ className, children }: { className: string; children: ReactNode }) => {
-    if (isLoggedIn) {
-      return (
-        <Link href={detailHref} className={className}>
-          {children}
-        </Link>
-      );
-    }
-    return (
-      <button
-        type="button"
-        className={className}
-        onClick={() => onRequireLogin?.()}
-      >
-        {children}
-      </button>
-    );
-  };
+  const ImageNav = ({ className, children }: { className: string; children: ReactNode }) => (
+    <Link href={detailHref} className={className}>
+      {children}
+    </Link>
+  );
 
   if (n === 0) {
     return (
@@ -84,7 +71,14 @@ export function PropertyCardCarousel({
   if (n === 1) {
     return (
       <ImageNav className={`relative block ${aspectClass} bg-zinc-100 dark:bg-zinc-800`}>
-        <Image src={urls[0]} alt="" fill className="object-cover" sizes={sizes} priority={false} />
+        <Image
+          src={urls[0]}
+          alt={imageAlt}
+          fill
+          className="object-cover"
+          sizes={sizes}
+          loading="lazy"
+        />
       </ImageNav>
     );
   }
@@ -116,7 +110,14 @@ export function PropertyCardCarousel({
           aria-hidden={i !== index}
         >
           <ImageNav className="block h-full w-full">
-            <Image src={url} alt="" fill className="object-cover" sizes={sizes} />
+            <Image
+              src={url}
+              alt={`${imageAlt} — photo ${i + 1}`}
+              fill
+              className="object-cover"
+              sizes={sizes}
+              loading="lazy"
+            />
           </ImageNav>
         </div>
       ))}

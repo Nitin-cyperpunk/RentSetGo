@@ -7,6 +7,7 @@ import { ListingBadges } from "@/components/ListingBadges";
 import { LoginToViewDetailsModal } from "@/components/LoginToViewDetailsModal";
 import { PropertyCardCarousel } from "@/components/PropertyCardCarousel";
 import { parseDealType, priceSuffix } from "@/lib/listing";
+import { propertyPath } from "@/lib/seo";
 import type { PropertyWithImages } from "@/types/property";
 
 type Props = {
@@ -26,7 +27,7 @@ export function PropertyCardInteractive({
   isLoggedIn,
 }: Props) {
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const detailPath = `/property/${property.id}`;
+  const detailPath = propertyPath(property);
   const loginHref = `/login?next=${encodeURIComponent(detailPath)}`;
 
   const onRequireLogin = useCallback(() => setShowLoginModal(true), []);
@@ -43,7 +44,8 @@ export function PropertyCardInteractive({
       <article className="group flex flex-col overflow-hidden rounded-2xl border border-zinc-200/90 bg-white/95 shadow-md shadow-zinc-900/5 ring-1 ring-zinc-900/[0.04] transition duration-300 hover:-translate-y-1 hover:border-emerald-200/80 hover:shadow-xl hover:shadow-emerald-900/10 dark:border-zinc-700/90 dark:bg-zinc-900/95 dark:ring-white/5 dark:hover:border-emerald-500/25">
         <PropertyCardCarousel
           urls={imageUrls}
-          propertyId={property.id}
+          detailHref={detailPath}
+          imageAlt={property.title}
           sizes={CARD_IMAGE_SIZES}
           isLoggedIn={isLoggedIn}
           onRequireLogin={onRequireLogin}
@@ -51,19 +53,9 @@ export function PropertyCardInteractive({
         <div className="flex flex-1 flex-col gap-2 p-4">
           <div className="flex items-start justify-between gap-2">
             <h2 className="line-clamp-2 text-[15px] font-medium leading-snug text-zinc-900 dark:text-zinc-100">
-              {isLoggedIn ? (
-                <Link href={detailPath} className={titleLinkClass}>
-                  {property.title}
-                </Link>
-              ) : (
-                <button
-                  type="button"
-                  onClick={onRequireLogin}
-                  className={`text-left ${titleLinkClass}`}
-                >
-                  {property.title}
-                </button>
-              )}
+              <Link href={detailPath} className={titleLinkClass}>
+                {property.title}
+              </Link>
             </h2>
             <p className="shrink-0 text-[15px] font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">
               {formattedRent}
@@ -81,15 +73,9 @@ export function PropertyCardInteractive({
               {property.location}
             </p>
           ) : null}
-          {isLoggedIn ? (
-            <Link href={detailPath} className={viewDetailsClass}>
-              View details
-            </Link>
-          ) : (
-            <button type="button" onClick={onRequireLogin} className={viewDetailsClass}>
-              View details
-            </button>
-          )}
+          <Link href={detailPath} className={viewDetailsClass}>
+            View details
+          </Link>
         </div>
       </article>
 
