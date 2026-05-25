@@ -7,7 +7,7 @@ import { ListingBadges } from "@/components/ListingBadges";
 import { LoginToViewDetailsModal } from "@/components/LoginToViewDetailsModal";
 import { PropertyCardCarousel } from "@/components/PropertyCardCarousel";
 import { parseDealType, priceSuffix } from "@/lib/listing";
-import { propertyPath } from "@/lib/seo";
+import { propertyPathFromRow } from "@/lib/property-slug";
 import type { PropertyWithImages } from "@/types/property";
 
 type Props = {
@@ -27,15 +27,14 @@ export function PropertyCardInteractive({
   isLoggedIn,
 }: Props) {
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const detailPath = propertyPath(property);
+  const detailPath = propertyPathFromRow(property);
   const loginHref = `/login?next=${encodeURIComponent(detailPath)}`;
 
   const onRequireLogin = useCallback(() => setShowLoginModal(true), []);
   const deal = parseDealType(property.deal_type);
   const priceSfx = priceSuffix(deal);
 
-  const titleLinkClass =
-    "hover:underline dark:text-zinc-100";
+  const titleLinkClass = "hover:underline dark:text-zinc-100";
   const viewDetailsClass =
     "mt-auto inline-flex w-fit items-center text-sm font-medium text-zinc-900 underline-offset-4 hover:underline dark:text-zinc-100";
 
@@ -45,7 +44,6 @@ export function PropertyCardInteractive({
         <PropertyCardCarousel
           urls={imageUrls}
           detailHref={detailPath}
-          imageAlt={property.title}
           sizes={CARD_IMAGE_SIZES}
           isLoggedIn={isLoggedIn}
           onRequireLogin={onRequireLogin}
@@ -60,11 +58,17 @@ export function PropertyCardInteractive({
             <p className="shrink-0 text-[15px] font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">
               {formattedRent}
               {priceSfx ? (
-                <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">{priceSfx}</span>
+                <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">
+                  {priceSfx}
+                </span>
               ) : null}
             </p>
           </div>
-          <ListingBadges dealType={property.deal_type} category={property.category} compact />
+          <ListingBadges
+            dealType={property.deal_type}
+            category={property.category}
+            compact
+          />
           <p className="text-xs font-medium uppercase tracking-wide text-emerald-800/80 dark:text-emerald-400/90">
             {property.property_type}
           </p>

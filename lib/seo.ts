@@ -86,8 +86,13 @@ export function propertySlug(
 }
 
 export function propertyPath(
-  property: Pick<PropertyWithImages, "id" | "title" | "location" | "property_type">,
+  property: Pick<
+    PropertyWithImages,
+    "id" | "title" | "location" | "property_type" | "slug"
+  >,
 ): string {
+  const dbSlug = property.slug?.trim();
+  if (dbSlug) return `/property/${dbSlug}`;
   return `/property/${propertySlug(property)}`;
 }
 

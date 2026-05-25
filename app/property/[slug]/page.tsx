@@ -1,18 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound, permanentRedirect } from "next/navigation";
+import { notFound, permanentRedirect, redirect } from "next/navigation";
 
+import { getPropertyById, getPropertyBySlug } from "@/app/actions/properties";
 import { ListingBadges } from "@/components/ListingBadges";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { PropertyImageGallery } from "@/components/PropertyImageGallery";
 import { PropertyOwnerContact } from "@/components/PropertyOwnerContact";
+import { createClient } from "@/lib/supabase/server";
 import { parseDealType, priceSuffix } from "@/lib/listing";
-import { getActivePropertyByParam } from "@/lib/queries/properties";
+import { isPropertyUuid, propertyPath as slugPath } from "@/lib/property-slug";
 import {
   breadcrumbJsonLd,
   buildPropertyMetadata,
-  propertyPath,
-  propertySlug,
+  propertyPath as listingPath,
   realEstateListingJsonLd,
 } from "@/lib/seo";
 import { galleryImages } from "@/types/property";
@@ -21,9 +22,22 @@ type PageProps = {
   params: Promise<{ slug: string }>;
 };
 
+async function resolveProperty(param: string) {
+  const trimmed = param.trim();
+  if (isPropertyUuid(trimmed)) {
+    const byId = await getPropertyById(trimmed);
+    if (!byId) return null;
+    if (byId.slug) {
+      permanentRedirect(slugPath(byId.slug));
+    }
+    return byId;
+  }
+  return getPropertyBySlug(trimmed);
+}
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { slug } = await params;
-  const property = await getActivePropertyByParam(slug);
+  const { slug: param } = await params;
+  const property = await resolveProperty(param);
   if (!property) {
     return { title: "Listing not found", robots: { index: false, follow: false } };
   }
@@ -43,14 +57,21 @@ function formatPriceInr(amount: number) {
 }
 
 export default async function PropertyDetailPage({ params }: PageProps) {
-  const { slug } = await params;
-  const property = await getActivePropertyByParam(slug);
-  if (!property) notFound();
+  const { slug: param } = await params;
+  const canonicalPath = isPropertyUuid(param)
+    ? `/property/${param}`
+    : slugPath(param);
 
-  const canonicalSlug = propertySlug(property);
-  if (slug !== canonicalSlug) {
-    permanentRedirect(propertyPath(property));
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    redirect(`/login?next=${encodeURIComponent(canonicalPath)}`);
   }
+
+  const property = await resolveProperty(param);
+  if (!property) notFound();
 
   const images = galleryImages(property);
   const dealType = parseDealType(property.deal_type);
@@ -61,7 +82,7 @@ export default async function PropertyDetailPage({ params }: PageProps) {
   const breadcrumbs = breadcrumbJsonLd([
     { name: "Home", path: "/" },
     { name: "Listings", path: "/#browse" },
-    { name: property.title, path: propertyPath(property) },
+    { name: property.title, path: listingPath(property) },
   ]);
 
   return (
@@ -79,11 +100,7 @@ export default async function PropertyDetailPage({ params }: PageProps) {
         <article className="rounded-2xl border border-zinc-200/80 bg-white/95 shadow-xl shadow-zinc-200/50 dark:border-zinc-700/80 dark:bg-zinc-900/90 dark:shadow-black/40">
           <div className="lg:grid lg:grid-cols-[1.45fr_0.85fr] lg:items-start">
             <div className="min-w-0 p-6 pb-10 md:p-10 md:pb-12">
-              <PropertyImageGallery
-                images={images}
-                imageTitle={property.title}
-                location={property.location}
-              />
+              <PropertyImageGallery images={images} imageTitle={property.title} />
               <div className="mt-5 flex flex-wrap items-center gap-2 text-sm">
                 <ListingBadges dealType={property.deal_type} category={property.category} />
                 <span className="rounded-full border border-emerald-200 bg-emerald-100 px-2.5 py-0.5 font-semibold text-emerald-900 shadow-sm dark:border-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-100">
@@ -137,19 +154,13 @@ export default async function PropertyDetailPage({ params }: PageProps) {
               ) : null}
               <div className="mt-4 flex gap-8 text-[16px] text-zinc-800 dark:text-zinc-200">
                 {property.bedrooms != null ? (
-                  <span className="flex items-center gap-1">
-                    {property.bedrooms} bed
-                  </span>
+                  <span>{property.bedrooms} bed</span>
                 ) : null}
                 {property.bathrooms != null ? (
-                  <span className="flex items-center gap-1">
-                    {property.bathrooms} bath
-                  </span>
+                  <span>{property.bathrooms} bath</span>
                 ) : null}
                 {property.area_sqft != null ? (
-                  <span className="flex items-center gap-1">
-                    {property.area_sqft.toLocaleString()} sqft
-                  </span>
+                  <span>{property.area_sqft.toLocaleString()} sqft</span>
                 ) : null}
               </div>
               {property.description ? (

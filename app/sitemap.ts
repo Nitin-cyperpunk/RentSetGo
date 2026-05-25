@@ -1,10 +1,10 @@
 import type { MetadataRoute } from "next";
 
-import {
-  listActivePropertiesForSitemap,
-  type SitemapPropertyEntry,
-} from "@/lib/queries/properties";
-import { CONTENT_ROUTES, getSiteUrl, propertyPath } from "@/lib/seo";
+import { listActivePropertySlugsForSitemap } from "@/lib/queries/properties";
+import { propertyPath } from "@/lib/property-slug";
+import { CONTENT_ROUTES, getSiteUrl } from "@/lib/seo";
+
+export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = getSiteUrl();
@@ -22,16 +22,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
   ];
 
-  let listings: SitemapPropertyEntry[] = [];
+  let listings: Awaited<ReturnType<typeof listActivePropertySlugsForSitemap>> = [];
   try {
-    listings = await listActivePropertiesForSitemap();
+    listings = await listActivePropertySlugsForSitemap();
   } catch (err) {
-    console.error("[sitemap] property fetch failed", err);
+    console.error("[sitemap] listings", err);
   }
 
   const propertyRoutes: MetadataRoute.Sitemap = listings.map((p) => ({
-    url: `${base}${propertyPath(p)}`,
-    lastModified: p.updated_at ? new Date(p.updated_at) : p.created_at ? new Date(p.created_at) : now,
+    url: `${base}${propertyPath(p.slug)}`,
+    lastModified: p.updated_at ? new Date(p.updated_at) : now,
     changeFrequency: "daily" as const,
     priority: 0.8,
   }));

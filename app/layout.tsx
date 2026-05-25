@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 
 import { AppToaster } from "@/components/app-toaster";
@@ -124,7 +125,13 @@ export default function RootLayout({
   return (
     <html
       lang="en-IN"
-      className={cn("h-full", geistSans.variable, geistMono.variable, "font-sans", inter.variable)}
+      className={cn(
+        "h-full",
+        geistSans.variable,
+        geistMono.variable,
+        "font-sans",
+        inter.variable
+      )}
       suppressHydrationWarning
     >
       <body className="app-backdrop flex min-h-full flex-col font-sans text-foreground antialiased">
@@ -137,6 +144,7 @@ export default function RootLayout({
           </AppShell>
         </ThemeProvider>
         <Analytics />
+        <SpeedInsights />
         <GoogleAnalytics />
       </body>
     </html>

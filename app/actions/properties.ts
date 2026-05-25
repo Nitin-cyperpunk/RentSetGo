@@ -4,7 +4,11 @@ import { revalidatePath } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { parseDealType, parseListingCategory } from "@/lib/listing";
-import { propertyPath } from "@/lib/seo";
+import {
+  propertyPath,
+  propertyPathFromRow,
+  resolveUniquePropertySlug,
+} from "@/lib/property-slug";
 import { ensureProfileIfMissing } from "@/lib/auth/profile";
 import { resolveOwnerId } from "@/lib/dev-owner";
 import { createClient } from "@/lib/supabase/server";
@@ -37,10 +41,14 @@ async function getClientsForOwnerAction() {
 }
 
 async function revalidateListingPaths(propertyId: string) {
-  revalidatePath("/");
   const row = await getPropertyById(propertyId);
-  if (row) {
-    revalidatePath(propertyPath(row));
+  if (row?.slug) {
+    await revalidatePropertyPaths(row.slug);
+  } else {
+    revalidatePath("/");
+    revalidatePath("/owner/my-properties");
+    revalidatePath("/owner/dashboard");
+    if (row) revalidatePath(propertyPathFromRow(row));
   }
   revalidatePath(`/property/${propertyId}`);
 }
@@ -105,6 +113,13 @@ function parseAmenities(formData: FormData): string[] {
     .getAll("amenities")
     .map((a) => String(a).trim())
     .filter(Boolean);
+}
+
+async function revalidatePropertyPaths(slug: string) {
+  revalidatePath("/");
+  revalidatePath("/owner/my-properties");
+  revalidatePath("/owner/dashboard");
+  revalidatePath(propertyPath(slug));
 }
 
 function parseOptionalText(formData: FormData, key: string): string | null {
@@ -208,10 +223,17 @@ export async function submitListing(formData: FormData) {
     return { error: uploaded.error };
   }
 
+  const slug = await resolveUniquePropertySlug(db, {
+    title,
+    location: location || null,
+    property_type,
+  });
+
   const { data: inserted, error: insertErr } = await db
     .from("properties")
     .insert({
       owner_id: ownerId,
+      slug,
       title,
       description: description.trim() || null,
       ai_description,
@@ -235,7 +257,7 @@ export async function submitListing(formData: FormData) {
       expires_at: new Date(expires_at).toISOString(),
       updated_at: new Date().toISOString(),
     })
-    .select("id")
+    .select("id, slug")
     .single();
 
   if (insertErr || !inserted?.id) {
@@ -261,10 +283,8 @@ export async function submitListing(formData: FormData) {
     }
   }
 
-  revalidatePath("/");
-  revalidatePath("/owner/my-properties");
-  revalidatePath("/owner/dashboard");
-  return { ok: true as const, propertyId };
+  await revalidatePropertyPaths(inserted.slug ?? slug);
+  return { ok: true as const, propertyId, slug: inserted.slug ?? slug };
 }
 
 export async function updateListing(propertyId: string, formData: FormData) {
@@ -275,7 +295,11 @@ export async function updateListing(propertyId: string, formData: FormData) {
 
   const { ownerId, db, storage } = clients;
 
-  const existing = await db.from("properties").select("id, owner_id").eq("id", propertyId).maybeSingle();
+  const existing = await db
+    .from("properties")
+    .select("id, owner_id, slug")
+    .eq("id", propertyId)
+    .maybeSingle();
 
   if (existing.error || !existing.data || existing.data.owner_id !== ownerId) {
     return { error: "Listing not found or you can’t edit it." };
@@ -384,9 +408,7 @@ export async function updateListing(propertyId: string, formData: FormData) {
     }
   }
 
-  revalidatePath("/");
-  revalidatePath("/owner/my-properties");
-  await revalidateListingPaths(propertyId);
+  await revalidatePropertyPaths(existing.data.slug);
   return { ok: true as const };
 }
 
@@ -423,6 +445,23 @@ export async function getPropertyById(id: string): Promise<PropertyWithImages | 
   return data as PropertyWithImages;
 }
 
+/** Public detail page: lookup by stable slug (active listings only). */
+export async function getPropertyBySlug(slug: string): Promise<PropertyWithImages | null> {
+  const supabase = await getSupabaseForReads();
+  const nowIso = new Date().toISOString();
+  const { data, error } = await supabase
+    .from("properties")
+    .select(propertySelect)
+    .eq("slug", slug.trim())
+    .gt("expires_at", nowIso)
+    .maybeSingle();
+
+  if (error || !data) {
+    return null;
+  }
+  return data as PropertyWithImages;
+}
+
 export async function getPropertyForOwner(id: string): Promise<PropertyWithImages | null> {
   const supabase = await createClient();
   const ownerId = await resolveOwnerId(supabase);
@@ -441,18 +480,18 @@ export async function extendListingExpiry(propertyId: string) {
   }
   const { ownerId, db } = clients;
 
-  const { data: row, error: fetchErr } = await db
+  const { data: listing, error: fetchErr } = await db
     .from("properties")
-    .select("expires_at")
+    .select("expires_at, slug")
     .eq("id", propertyId)
     .eq("owner_id", ownerId)
     .maybeSingle();
 
-  if (fetchErr || !row) {
+  if (fetchErr || !listing) {
     return { error: "Listing not found." };
   }
 
-  const base = new Date(row.expires_at);
+  const base = new Date(listing.expires_at);
   const from = base.getTime() > Date.now() ? base : new Date();
   const next = new Date(from);
   next.setDate(next.getDate() + 30);
@@ -470,10 +509,7 @@ export async function extendListingExpiry(propertyId: string) {
     return { error: dbErrorMessage(upErr) };
   }
 
-  revalidatePath("/");
-  revalidatePath("/owner/my-properties");
-  revalidatePath("/owner/dashboard");
-  await revalidateListingPaths(propertyId);
+  if (listing.slug) await revalidatePropertyPaths(listing.slug);
   return { ok: true as const, expires_at: next.toISOString() };
 }
 
@@ -498,8 +534,13 @@ export async function setListingAvailability(propertyId: string, status: "availa
     return { error: dbErrorMessage(error) };
   }
 
+  const { data: row } = await db
+    .from("properties")
+    .select("slug")
+    .eq("id", propertyId)
+    .maybeSingle();
   revalidatePath("/");
   revalidatePath("/owner/my-properties");
-  await revalidateListingPaths(propertyId);
+  if (row?.slug) await revalidatePropertyPaths(row.slug);
   return { ok: true as const };
 }

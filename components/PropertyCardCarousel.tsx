@@ -9,7 +9,6 @@ const AUTO_MS = 4500;
 type Props = {
   urls: string[];
   detailHref: string;
-  imageAlt?: string;
   sizes: string;
   /** Tailwind aspect class, e.g. `aspect-[16/10]` for owner cards */
   aspectClass?: string;
@@ -21,7 +20,6 @@ type Props = {
 export function PropertyCardCarousel({
   urls,
   detailHref,
-  imageAlt = "Property listing",
   sizes,
   aspectClass = "aspect-[4/3]",
   isLoggedIn = true,
@@ -52,11 +50,24 @@ export function PropertyCardCarousel({
     return () => window.clearInterval(id);
   }, [n, paused]);
 
-  const ImageNav = ({ className, children }: { className: string; children: ReactNode }) => (
-    <Link href={detailHref} className={className}>
-      {children}
-    </Link>
-  );
+  const ImageNav = ({ className, children }: { className: string; children: ReactNode }) => {
+    if (isLoggedIn) {
+      return (
+        <Link href={detailHref} className={className}>
+          {children}
+        </Link>
+      );
+    }
+    return (
+      <button
+        type="button"
+        className={className}
+        onClick={() => onRequireLogin?.()}
+      >
+        {children}
+      </button>
+    );
+  };
 
   if (n === 0) {
     return (
@@ -73,7 +84,7 @@ export function PropertyCardCarousel({
       <ImageNav className={`relative block ${aspectClass} bg-zinc-100 dark:bg-zinc-800`}>
         <Image
           src={urls[0]}
-          alt={imageAlt}
+          alt="Property listing"
           fill
           className="object-cover"
           sizes={sizes}
@@ -112,7 +123,7 @@ export function PropertyCardCarousel({
           <ImageNav className="block h-full w-full">
             <Image
               src={url}
-              alt={`${imageAlt} — photo ${i + 1}`}
+              alt="Property listing"
               fill
               className="object-cover"
               sizes={sizes}

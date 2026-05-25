@@ -6,7 +6,7 @@ import { PropertyCardCarousel } from "@/components/PropertyCardCarousel";
 import { resolveOwnerId } from "@/lib/dev-owner";
 import { createClient } from "@/lib/supabase/server";
 import { listMyProperties } from "@/lib/queries/properties";
-import { propertyPath } from "@/lib/seo";
+import { propertyPathFromRow } from "@/lib/property-slug";
 import { allImageUrls } from "@/types/property";
 
 export const metadata = {
@@ -49,8 +49,12 @@ export default async function MyPropertiesPage() {
             >
               <span aria-hidden>←</span> Dashboard
             </Link>
-            <h1 className="mt-3 text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">My properties</h1>
-            <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">Edit details, add photos, or remove a listing.</p>
+            <h1 className="mt-3 text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+              My properties
+            </h1>
+            <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+              Edit details, add photos, or remove a listing.
+            </p>
           </div>
           <Link
             href="/owner/add-property"
@@ -68,19 +72,37 @@ export default async function MyPropertiesPage() {
             <p className="font-medium">Could not load listings.</p>
             <p className="mt-2">{listError}</p>
             <p className="mt-2 text-red-900/90 dark:text-red-200/90">
-              Add <code className="rounded bg-red-100/80 px-1 dark:bg-red-900/80">SELECT</code> policies on{" "}
-              <code className="rounded bg-red-100/80 px-1 dark:bg-red-900/80">properties</code> and{" "}
-              <code className="rounded bg-red-100/80 px-1 dark:bg-red-900/80">property_images</code> for your role, or fix RLS so owners
-              can read rows where <code className="rounded bg-red-100/80 px-1 dark:bg-red-900/80">owner_id = auth.uid()</code>.
+              Add{" "}
+              <code className="rounded bg-red-100/80 px-1 dark:bg-red-900/80">
+                SELECT
+              </code>{" "}
+              policies on{" "}
+              <code className="rounded bg-red-100/80 px-1 dark:bg-red-900/80">
+                properties
+              </code>{" "}
+              and{" "}
+              <code className="rounded bg-red-100/80 px-1 dark:bg-red-900/80">
+                property_images
+              </code>{" "}
+              for your role, or fix RLS so owners can read rows where{" "}
+              <code className="rounded bg-red-100/80 px-1 dark:bg-red-900/80">
+                owner_id = auth.uid()
+              </code>
+              .
             </p>
           </div>
         )}
 
         {rows.length === 0 && !listError ? (
           <div className="mt-14 rounded-2xl border border-dashed border-zinc-300 bg-white/80 p-12 text-center dark:border-zinc-600 dark:bg-zinc-900/60">
-            <p className="text-zinc-600 dark:text-zinc-300">No listings yet for your account.</p>
+            <p className="text-zinc-600 dark:text-zinc-300">
+              No listings yet for your account.
+            </p>
             <p className="mt-3 text-sm text-zinc-500 dark:text-zinc-400">
-              If you already have rows in Supabase, ensure <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">owner_id</code>{" "}
+              If you already have rows in Supabase, ensure{" "}
+              <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">
+                owner_id
+              </code>{" "}
               matches your user id.
             </p>
             <Link
@@ -103,8 +125,7 @@ export default async function MyPropertiesPage() {
                   <div className="relative">
                     <PropertyCardCarousel
                       urls={urls}
-                      detailHref={propertyPath(p)}
-                      imageAlt={p.title}
+                      detailHref={propertyPathFromRow(p)}
                       sizes="(max-width:640px) 100vw, 50vw"
                       aspectClass="aspect-[16/10]"
                     />
@@ -118,17 +139,23 @@ export default async function MyPropertiesPage() {
                     <p className="text-xs font-semibold uppercase tracking-wide text-emerald-800/90 dark:text-emerald-400/90">
                       {p.property_type}
                     </p>
-                    <p className="line-clamp-2 font-semibold text-zinc-900 dark:text-zinc-50">{p.title}</p>
+                    <p className="line-clamp-2 font-semibold text-zinc-900 dark:text-zinc-50">
+                      {p.title}
+                    </p>
                     {p.location ? (
-                      <p className="mt-1 line-clamp-1 text-sm text-zinc-500 dark:text-zinc-400">{p.location}</p>
+                      <p className="mt-1 line-clamp-1 text-sm text-zinc-500 dark:text-zinc-400">
+                        {p.location}
+                      </p>
                     ) : null}
                     <p className="mt-2 text-lg font-bold tabular-nums text-emerald-800 dark:text-emerald-400">
                       {formatRentInr(p.price)}
-                      <span className="text-sm font-normal text-zinc-500 dark:text-zinc-400">/mo</span>
+                      <span className="text-sm font-normal text-zinc-500 dark:text-zinc-400">
+                        /mo
+                      </span>
                     </p>
                     <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-zinc-100 pt-4 dark:border-zinc-700">
                       <Link
-                        href={propertyPath(p)}
+                        href={propertyPathFromRow(p)}
                         className="text-sm font-medium text-zinc-700 underline-offset-4 hover:text-zinc-900 hover:underline dark:text-zinc-300 dark:hover:text-white"
                       >
                         View

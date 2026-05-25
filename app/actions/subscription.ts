@@ -7,16 +7,21 @@ import {
   type ProfileSubscription,
   remainingPosters,
 } from "@/lib/ai/subscription";
-import { ensureProfileIfMissing } from "@/lib/auth/profile";
+import { ensureProfileIfMissing, normalizePhoneString } from "@/lib/auth/profile";
+import { activatePlanForUser } from "@/lib/subscription/activate-plan";
 import {
   type PlanId,
   PLANS,
 } from "@/lib/subscription/plans";
 import {
+  assertRazorpayMode,
+  getPublicKeyId,
   getRazorpayClient,
+  isRazorpayTestMode,
   planAmountPaise,
   razorpayConfigured,
-  subscriptionExpiryFromNow,
+  validateRazorpayOrder,
+  validateRazorpayPayment,
   verifyRazorpaySignature,
 } from "@/lib/subscription/razorpay-server";
 import { createClient } from "@/lib/supabase/server";
@@ -28,6 +33,8 @@ export type SubscriptionState = {
   remaining: number;
   expiry: string | null;
   isActive: boolean;
+  paymentsConfigured: boolean;
+  razorpayTestMode: boolean;
 };
 
 export async function getSubscriptionState(): Promise<{
@@ -69,6 +76,8 @@ export async function getSubscriptionState(): Promise<{
       remaining: remaining === Infinity ? 999 : remaining,
       expiry: profile.subscription_expiry,
       isActive: plan !== "free",
+      paymentsConfigured: razorpayConfigured(),
+      razorpayTestMode: isRazorpayTestMode(),
     },
   };
 }
@@ -79,6 +88,8 @@ export async function createRazorpayOrder(planId: Exclude<PlanId, "free">): Prom
   currency?: string;
   keyId?: string;
   planName?: string;
+  testMode?: boolean;
+  prefill?: { email?: string; contact?: string; name?: string };
   error?: string;
 }> {
   const supabase = await createClient();
@@ -91,8 +102,27 @@ export async function createRazorpayOrder(planId: Exclude<PlanId, "free">): Prom
   }
 
   if (!razorpayConfigured()) {
-    return { error: "Payments are not configured yet. Use demo activation in development." };
+    return {
+      error: "Payments are not configured yet. Use demo activation in development.",
+    };
   }
+
+  await ensureProfileIfMissing(supabase, user);
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("phone, name")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const phoneDigits = normalizePhoneString(profile?.phone)?.replace(/\D/g, "");
+  const prefill = {
+    email: user.email ?? undefined,
+    contact: phoneDigits && phoneDigits.length >= 10 ? phoneDigits : undefined,
+    name: profile?.name ?? undefined,
+  };
+
+  assertRazorpayMode();
 
   try {
     const razorpay = getRazorpayClient();
@@ -107,12 +137,26 @@ export async function createRazorpayOrder(planId: Exclude<PlanId, "free">): Prom
       },
     });
 
+    const keyId = getPublicKeyId();
+    if (!keyId) {
+      return { error: "Razorpay public key is missing." };
+    }
+
+    console.info("[createRazorpayOrder] ok", {
+      orderId: order.id,
+      planId,
+      amount,
+      testMode: isRazorpayTestMode(),
+    });
+
     return {
       orderId: order.id,
       amount: order.amount as number,
       currency: order.currency,
-      keyId: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ?? process.env.RAZORPAY_KEY_ID,
+      keyId,
       planName: PLANS[planId].name,
+      testMode: isRazorpayTestMode(),
+      prefill,
     };
   } catch (e) {
     console.error("[createRazorpayOrder]", e);
@@ -135,15 +179,51 @@ export async function verifyAndActivateSubscription(input: {
     return { success: false, error: "Sign in required." };
   }
 
-  if (!verifyRazorpaySignature(
-    input.razorpayOrderId,
-    input.razorpayPaymentId,
-    input.razorpaySignature,
-  )) {
+  if (!razorpayConfigured()) {
+    return { success: false, error: "Payments are not configured." };
+  }
+
+  if (
+    !verifyRazorpaySignature(
+      input.razorpayOrderId,
+      input.razorpayPaymentId,
+      input.razorpaySignature,
+    )
+  ) {
+    console.error("[verifyAndActivateSubscription] invalid signature", {
+      orderId: input.razorpayOrderId,
+      userId: user.id,
+    });
     return { success: false, error: "Payment verification failed." };
   }
 
-  return activatePlanForUser(user.id, input.planId);
+  const paymentCheck = await validateRazorpayPayment(
+    input.razorpayOrderId,
+    input.razorpayPaymentId,
+  );
+  if (!paymentCheck.ok) {
+    return { success: false, error: paymentCheck.error };
+  }
+
+  const orderCheck = await validateRazorpayOrder(
+    input.razorpayOrderId,
+    user.id,
+    input.planId,
+  );
+  if (!orderCheck.ok) {
+    return { success: false, error: orderCheck.error };
+  }
+
+  const result = await activatePlanForUser(user.id, input.planId);
+  if (result.success) {
+    revalidatePath("/owner");
+    revalidatePath("/pricing");
+    console.info("[verifyAndActivateSubscription] activated", {
+      userId: user.id,
+      planId: input.planId,
+    });
+  }
+  return result;
 }
 
 /** Dev/demo activation when Razorpay keys are not set */
@@ -163,31 +243,10 @@ export async function activatePlanDemo(
     return { success: false, error: "Sign in required." };
   }
 
-  return activatePlanForUser(user.id, planId);
-}
-
-async function activatePlanForUser(
-  userId: string,
-  planId: Exclude<PlanId, "free">,
-): Promise<{ success: boolean; error?: string }> {
-  const supabase = await createClient();
-  const expiry = subscriptionExpiryFromNow();
-
-  const { error } = await supabase
-    .from("profiles")
-    .update({
-      subscription_status: "active",
-      subscription_plan: planId,
-      subscription_expiry: expiry,
-    })
-    .eq("id", userId);
-
-  if (error) {
-    console.error("[activatePlanForUser]", error);
-    return { success: false, error: "Could not activate subscription." };
+  const result = await activatePlanForUser(user.id, planId);
+  if (result.success) {
+    revalidatePath("/owner");
+    revalidatePath("/pricing");
   }
-
-  revalidatePath("/owner");
-  revalidatePath("/pricing");
-  return { success: true };
+  return result;
 }
