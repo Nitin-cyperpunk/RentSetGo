@@ -43,6 +43,7 @@ export type Database = {
         Row: {
           id: string;
           owner_id: string;
+          slug: string;
           title: string;
           description: string | null;
           price: number;
@@ -74,6 +75,7 @@ export type Database = {
         Insert: {
           id?: string;
           owner_id: string;
+          slug: string;
           title: string;
           description?: string | null;
           price: number;
@@ -105,6 +107,7 @@ export type Database = {
         Update: {
           id?: string;
           owner_id?: string;
+          slug?: string;
           title?: string;
           description?: string | null;
           price?: number;

@@ -8,7 +8,7 @@ const AUTO_MS = 4500;
 
 type Props = {
   urls: string[];
-  propertyId: string;
+  detailHref: string;
   sizes: string;
   /** Tailwind aspect class, e.g. `aspect-[16/10]` for owner cards */
   aspectClass?: string;
@@ -19,7 +19,7 @@ type Props = {
 
 export function PropertyCardCarousel({
   urls,
-  propertyId,
+  detailHref,
   sizes,
   aspectClass = "aspect-[4/3]",
   isLoggedIn = true,
@@ -49,8 +49,6 @@ export function PropertyCardCarousel({
     }, AUTO_MS);
     return () => window.clearInterval(id);
   }, [n, paused]);
-
-  const detailHref = `/property/${propertyId}`;
 
   const ImageNav = ({ className, children }: { className: string; children: ReactNode }) => {
     if (isLoggedIn) {

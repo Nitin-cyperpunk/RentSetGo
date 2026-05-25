@@ -2,7 +2,9 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Loader2, Sparkles, X } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+
+import { BRAND_FAVICON, BRAND_NAME, getBrandLogoAbsoluteUrl } from "@/lib/brand";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   activatePlanDemo,
@@ -10,6 +12,7 @@ import {
   verifyAndActivateSubscription,
 } from "@/app/actions/subscription";
 import { notify } from "@/lib/toast";
+import { RAZORPAY_CHECKOUT_CONFIG } from "@/lib/subscription/razorpay-checkout-config";
 import type { PlanId } from "@/lib/subscription/plans";
 import { PLANS } from "@/lib/subscription/plans";
 
@@ -17,7 +20,7 @@ declare global {
   interface Window {
     Razorpay?: new (options: Record<string, unknown>) => {
       open: () => void;
-      on: (event: string, handler: (response: Record<string, string>) => void) => void;
+      on: (event: string, handler: (response: unknown) => void) => void;
     };
   }
 }
@@ -31,29 +34,62 @@ type Props = {
 
 type Step = "idle" | "processing" | "success" | "error";
 
+const SCRIPT_TIMEOUT_MS = 15_000;
+const ORDER_TIMEOUT_MS = 30_000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => {
+      setTimeout(() => reject(new Error(message)), ms);
+    }),
+  ]);
+}
+
 function loadRazorpayScript(): Promise<boolean> {
   if (typeof window === "undefined") return Promise.resolve(false);
   if (window.Razorpay) return Promise.resolve(true);
-  return new Promise((resolve) => {
-    const s = document.createElement("script");
-    s.src = "https://checkout.razorpay.com/v1/checkout.js";
-    s.onload = () => resolve(true);
-    s.onerror = () => resolve(false);
-    document.body.appendChild(s);
-  });
+
+  return withTimeout(
+    new Promise<boolean>((resolve) => {
+      const existing = document.querySelector('script[src*="checkout.razorpay.com"]');
+      if (existing) {
+        existing.addEventListener("load", () => resolve(Boolean(window.Razorpay)));
+        existing.addEventListener("error", () => resolve(false));
+        if (window.Razorpay) resolve(true);
+        return;
+      }
+
+      const s = document.createElement("script");
+      s.src = "https://checkout.razorpay.com/v1/checkout.js";
+      s.async = true;
+      s.onload = () => resolve(Boolean(window.Razorpay));
+      s.onerror = () => resolve(false);
+      document.body.appendChild(s);
+    }),
+    SCRIPT_TIMEOUT_MS,
+    "Razorpay script load timed out",
+  ).catch(() => false);
 }
 
 export function CheckoutModal({ open, planId, onClose, onSuccess }: Props) {
   const [step, setStep] = useState<Step>("idle");
   const [error, setError] = useState<string | null>(null);
   const [demoAvailable, setDemoAvailable] = useState(false);
+  const [razorpayOpen, setRazorpayOpen] = useState(false);
+  const planIdRef = useRef(planId);
 
   const plan = planId ? PLANS[planId] : null;
+
+  useEffect(() => {
+    planIdRef.current = planId;
+  }, [planId]);
 
   useEffect(() => {
     if (!open) {
       setStep("idle");
       setError(null);
+      setRazorpayOpen(false);
     }
   }, [open]);
 
@@ -63,67 +99,116 @@ export function CheckoutModal({ open, planId, onClose, onSuccess }: Props) {
 
   const handleSuccess = useCallback(() => {
     setStep("success");
+    setRazorpayOpen(false);
     notify.subscriptionActivated(plan?.name);
     setTimeout(() => {
       onSuccess();
       onClose();
     }, 1800);
-  }, [onClose, onSuccess]);
+  }, [onClose, onSuccess, plan?.name]);
 
   const startCheckout = useCallback(async () => {
-    if (!planId) return;
+    const activePlanId = planIdRef.current;
+    if (!activePlanId) return;
+
     setStep("processing");
     setError(null);
+    setRazorpayOpen(false);
 
-    const order = await createRazorpayOrder(planId);
-    if (order.error) {
-      setError(order.error);
+    try {
+      const order = await withTimeout(
+        createRazorpayOrder(activePlanId),
+        ORDER_TIMEOUT_MS,
+        "Order creation timed out. Check your connection and Razorpay keys.",
+      );
+
+      if (order.error) {
+        setError(order.error);
+        setStep("error");
+        return;
+      }
+
+      if (!order.orderId || !order.keyId) {
+        setError("Payment gateway unavailable.");
+        setStep("error");
+        return;
+      }
+
+      const loaded = await loadRazorpayScript();
+      if (!loaded || !window.Razorpay) {
+        setError(
+          "Could not load Razorpay checkout. Disable ad blockers or try another browser.",
+        );
+        setStep("error");
+        return;
+      }
+
+      const prefill: Record<string, string> = {};
+      if (order.prefill?.email) prefill.email = order.prefill.email;
+      if (order.prefill?.name) prefill.name = order.prefill.name;
+      if (order.prefill?.contact && order.prefill.contact.length >= 10) {
+        prefill.contact = order.prefill.contact;
+      }
+
+      const rzp = new window.Razorpay({
+        key: order.keyId,
+        order_id: order.orderId,
+        name: BRAND_NAME,
+        image: getBrandLogoAbsoluteUrl(),
+        description: `${plan?.name ?? "Pro"} subscription`,
+        currency: order.currency ?? "INR",
+        config: RAZORPAY_CHECKOUT_CONFIG,
+        ...(Object.keys(prefill).length > 0 ? { prefill } : {}),
+        theme: { color: "#10b981" },
+        handler: async (response: Record<string, string>) => {
+          setRazorpayOpen(false);
+          setStep("processing");
+          try {
+            const result = await verifyAndActivateSubscription({
+              planId: activePlanId,
+              razorpayOrderId: response.razorpay_order_id,
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpaySignature: response.razorpay_signature,
+            });
+            if (result.success) {
+              handleSuccess();
+            } else {
+              setError(result.error ?? "Activation failed.");
+              setStep("error");
+            }
+          } catch (err) {
+            console.error("[checkout] verify failed", err);
+            setError("Could not confirm payment. Contact support if you were charged.");
+            setStep("error");
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            setRazorpayOpen(false);
+            setStep("idle");
+          },
+          escape: true,
+          backdropclose: true,
+        },
+      });
+
+      rzp.on("payment.failed", (res: unknown) => {
+        setRazorpayOpen(false);
+        const payload = res as { error?: { description?: string } };
+        setError(payload.error?.description ?? "Payment failed. Try again.");
+        setStep("error");
+      });
+
+      setRazorpayOpen(true);
+      setStep("idle");
+      rzp.open();
+    } catch (err) {
+      console.error("[checkout] startCheckout", err);
+      setRazorpayOpen(false);
+      setError(err instanceof Error ? err.message : "Could not start checkout.");
       setStep("error");
-      return;
     }
-
-    if (!order.orderId || !order.keyId) {
-      setStep("error");
-      setError("Payment gateway unavailable.");
-      return;
-    }
-
-    const loaded = await loadRazorpayScript();
-    if (!loaded || !window.Razorpay) {
-      setStep("error");
-      setError("Could not load payment SDK.");
-      return;
-    }
-
-    const rzp = new window.Razorpay({
-      key: order.keyId,
-      amount: order.amount,
-      currency: order.currency ?? "INR",
-      name: "RentSetGo",
-      description: `${plan?.name} subscription`,
-      order_id: order.orderId,
-      theme: { color: "#d4a574" },
-      handler: async (response: Record<string, string>) => {
-        const result = await verifyAndActivateSubscription({
-          planId,
-          razorpayOrderId: response.razorpay_order_id,
-          razorpayPaymentId: response.razorpay_payment_id,
-          razorpaySignature: response.razorpay_signature,
-        });
-        if (result.success) {
-          handleSuccess();
-        } else {
-          setError(result.error ?? "Activation failed.");
-          setStep("error");
-        }
-      },
-      modal: {
-        ondismiss: () => setStep("idle"),
-      },
-    });
-    rzp.open();
-    setStep("idle");
-  }, [planId, plan?.name, handleSuccess]);
+  }, [plan?.name, handleSuccess]);
 
   const startDemo = useCallback(async () => {
     if (!planId) return;
@@ -142,20 +227,22 @@ export function CheckoutModal({ open, planId, onClose, onSuccess }: Props) {
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 z-[80] flex items-end justify-center p-0 sm:items-center sm:p-4"
+        className={`fixed inset-0 z-[80] flex items-end justify-center p-0 sm:items-center sm:p-4 ${
+          razorpayOpen ? "pointer-events-none invisible" : ""
+        }`}
         initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
+        animate={{ opacity: razorpayOpen ? 0 : 1 }}
         exit={{ opacity: 0 }}
         role="dialog"
         aria-modal="true"
+        aria-hidden={razorpayOpen}
       >
         <motion.button
           type="button"
           className="absolute inset-0 bg-black/70 backdrop-blur-md"
           aria-label="Close"
           onClick={onClose}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+          tabIndex={razorpayOpen ? -1 : 0}
         />
 
         <motion.div
@@ -181,11 +268,11 @@ export function CheckoutModal({ open, planId, onClose, onSuccess }: Props) {
               animate={{ scale: 1, opacity: 1 }}
             >
               <motion.div
-                className="flex size-16 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400"
+                className="flex size-14 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400"
                 animate={{ scale: [1, 1.1, 1] }}
                 transition={{ duration: 0.5 }}
               >
-                <Check className="size-8" strokeWidth={2.5} />
+                <Check className="size-7" strokeWidth={2.5} />
               </motion.div>
               <p className="mt-4 text-xl font-bold text-white">You&apos;re Pro!</p>
               <p className="mt-2 text-sm text-zinc-400">
@@ -194,11 +281,22 @@ export function CheckoutModal({ open, planId, onClose, onSuccess }: Props) {
             </motion.div>
           ) : (
             <>
-              <div className="flex items-center gap-2 text-amber-400">
-                <Sparkles className="size-5" />
-                <span className="text-xs font-semibold uppercase tracking-wider">
-                  Secure checkout
-                </span>
+              <div className="flex items-center gap-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={BRAND_FAVICON}
+                  alt=""
+                  width={40}
+                  height={40}
+                  className="size-10 shrink-0 rounded-xl object-contain"
+                />
+                <div>
+                  <p className="text-sm font-bold text-white">{BRAND_NAME}</p>
+                  <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-amber-400/90">
+                    <Sparkles className="size-3.5" />
+                    Secure checkout
+                  </p>
+                </div>
               </div>
               <h3 className="mt-3 text-2xl font-bold text-white">
                 Upgrade to {plan.name}
@@ -232,7 +330,7 @@ export function CheckoutModal({ open, planId, onClose, onSuccess }: Props) {
                 {step === "processing" ? (
                   <>
                     <Loader2 className="size-4 animate-spin" />
-                    Processing…
+                    Opening Razorpay…
                   </>
                 ) : (
                   `Pay ₹${plan.priceInr} — Upgrade now`
@@ -251,7 +349,12 @@ export function CheckoutModal({ open, planId, onClose, onSuccess }: Props) {
               )}
 
               <p className="mt-4 text-center text-[11px] text-zinc-600">
-                Secured by Razorpay · UPI, cards & netbanking
+                Secured by Razorpay · UPI, QR, cards, netbanking & wallets
+                {process.env.NODE_ENV !== "production" ? (
+                  <span className="mt-1 block text-amber-600/80">
+                    Test: card 4111… or UPI success@razorpay
+                  </span>
+                ) : null}
               </p>
             </>
           )}

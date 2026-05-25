@@ -96,6 +96,26 @@ export async function listActiveProperties(filters: ActiveFilters): Promise<List
   return { rows, error: null };
 }
 
+export type SitemapPropertySlug = {
+  slug: string;
+  updated_at: string;
+};
+
+export async function listActivePropertySlugsForSitemap(): Promise<SitemapPropertySlug[]> {
+  const supabase = await getSupabaseForReads();
+  const nowIso = new Date().toISOString();
+  const { data, error } = await supabase
+    .from("properties")
+    .select("slug, updated_at")
+    .gt("expires_at", nowIso);
+
+  if (error) {
+    console.error("[listActivePropertySlugsForSitemap]", error);
+    return [];
+  }
+  return (data ?? []) as SitemapPropertySlug[];
+}
+
 export type ListMyPropertiesResult = {
   rows: PropertyWithImages[];
   /** Set when Supabase rejects the query (often RLS on read). */

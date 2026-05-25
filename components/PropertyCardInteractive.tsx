@@ -7,6 +7,7 @@ import { ListingBadges } from "@/components/ListingBadges";
 import { LoginToViewDetailsModal } from "@/components/LoginToViewDetailsModal";
 import { PropertyCardCarousel } from "@/components/PropertyCardCarousel";
 import { parseDealType, priceSuffix } from "@/lib/listing";
+import { propertyPathFromRow } from "@/lib/property-slug";
 import type { PropertyWithImages } from "@/types/property";
 
 type Props = {
@@ -26,7 +27,7 @@ export function PropertyCardInteractive({
   isLoggedIn,
 }: Props) {
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const detailPath = `/property/${property.id}`;
+  const detailPath = propertyPathFromRow(property);
   const loginHref = `/login?next=${encodeURIComponent(detailPath)}`;
 
   const onRequireLogin = useCallback(() => setShowLoginModal(true), []);
@@ -43,7 +44,7 @@ export function PropertyCardInteractive({
       <article className="group flex flex-col overflow-hidden rounded-2xl border border-zinc-200/90 bg-white/95 shadow-md shadow-zinc-900/5 ring-1 ring-zinc-900/[0.04] transition duration-300 hover:-translate-y-1 hover:border-emerald-200/80 hover:shadow-xl hover:shadow-emerald-900/10 dark:border-zinc-700/90 dark:bg-zinc-900/95 dark:ring-white/5 dark:hover:border-emerald-500/25">
         <PropertyCardCarousel
           urls={imageUrls}
-          propertyId={property.id}
+          detailHref={detailPath}
           sizes={CARD_IMAGE_SIZES}
           isLoggedIn={isLoggedIn}
           onRequireLogin={onRequireLogin}

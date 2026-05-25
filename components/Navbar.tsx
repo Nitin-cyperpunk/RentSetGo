@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import {
   Building2,
   Home,
+  IndianRupee,
   KeyRound,
   LayoutDashboard,
   LogIn,
@@ -55,6 +56,10 @@ export async function Navbar() {
 
           <NavItem href="/" label="Browse">
             <Home className="size-[1.15rem] shrink-0" strokeWidth={2.25} />
+          </NavItem>
+
+          <NavItem href="/pricing" label="Pricing">
+            <IndianRupee className="size-[1.15rem] shrink-0" strokeWidth={2.25} />
           </NavItem>
 
           {showOwnerNav ? (
