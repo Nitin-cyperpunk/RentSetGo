@@ -7,7 +7,6 @@ import { ListingBadges } from "@/components/ListingBadges";
 import { LoginToViewDetailsModal } from "@/components/LoginToViewDetailsModal";
 import { PropertyCardCarousel } from "@/components/PropertyCardCarousel";
 import { parseDealType, priceSuffix } from "@/lib/listing";
-import { propertyPathFromRow } from "@/lib/property-slug";
 import type { PropertyWithImages } from "@/types/property";
 
 type Props = {
@@ -27,7 +26,7 @@ export function PropertyCardInteractive({
   isLoggedIn,
 }: Props) {
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const detailPath = propertyPathFromRow(property);
+  const detailPath = `/property/${property.id}`;
   const loginHref = `/login?next=${encodeURIComponent(detailPath)}`;
 
   const onRequireLogin = useCallback(() => setShowLoginModal(true), []);

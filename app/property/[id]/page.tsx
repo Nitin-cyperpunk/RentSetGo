@@ -1,43 +1,30 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound, permanentRedirect, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 
-import { getPropertyById, getPropertyBySlug } from "@/app/actions/properties";
 import { ListingBadges } from "@/components/ListingBadges";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { PropertyImageGallery } from "@/components/PropertyImageGallery";
 import { PropertyOwnerContact } from "@/components/PropertyOwnerContact";
-import { createClient } from "@/lib/supabase/server";
 import { parseDealType, priceSuffix } from "@/lib/listing";
-import { isPropertyUuid, propertyPath as slugPath } from "@/lib/property-slug";
+import { getPropertyById } from "@/lib/queries/properties";
 import {
   breadcrumbJsonLd,
   buildPropertyMetadata,
-  propertyPath as listingPath,
+  propertyPath,
   realEstateListingJsonLd,
 } from "@/lib/seo";
 import { galleryImages } from "@/types/property";
 
+export const dynamic = "force-dynamic";
+
 type PageProps = {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ id: string }>;
 };
 
-async function resolveProperty(param: string) {
-  const trimmed = param.trim();
-  if (isPropertyUuid(trimmed)) {
-    const byId = await getPropertyById(trimmed);
-    if (!byId) return null;
-    if (byId.slug) {
-      permanentRedirect(slugPath(byId.slug));
-    }
-    return byId;
-  }
-  return getPropertyBySlug(trimmed);
-}
-
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { slug: param } = await params;
-  const property = await resolveProperty(param);
+  const { id } = await params;
+  const property = await getPropertyById(id);
   if (!property) {
     return { title: "Listing not found", robots: { index: false, follow: false } };
   }
@@ -57,20 +44,8 @@ function formatPriceInr(amount: number) {
 }
 
 export default async function PropertyDetailPage({ params }: PageProps) {
-  const { slug: param } = await params;
-  const canonicalPath = isPropertyUuid(param)
-    ? `/property/${param}`
-    : slugPath(param);
-
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    redirect(`/login?next=${encodeURIComponent(canonicalPath)}`);
-  }
-
-  const property = await resolveProperty(param);
+  const { id } = await params;
+  const property = await getPropertyById(id);
   if (!property) notFound();
 
   const images = galleryImages(property);
@@ -82,7 +57,7 @@ export default async function PropertyDetailPage({ params }: PageProps) {
   const breadcrumbs = breadcrumbJsonLd([
     { name: "Home", path: "/" },
     { name: "Listings", path: "/#browse" },
-    { name: property.title, path: listingPath(property) },
+    { name: property.title, path: propertyPath(property) },
   ]);
 
   return (

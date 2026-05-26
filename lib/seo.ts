@@ -86,14 +86,9 @@ export function propertySlug(
 }
 
 export function propertyPath(
-  property: Pick<
-    PropertyWithImages,
-    "id" | "title" | "location" | "property_type" | "slug"
-  >,
+  property: Pick<PropertyWithImages, "id">,
 ): string {
-  const dbSlug = property.slug?.trim();
-  if (dbSlug) return `/property/${dbSlug}`;
-  return `/property/${propertySlug(property)}`;
+  return `/property/${property.id}`;
 }
 
 /** Resolve route param to a property UUID (full id or 8-char prefix). */

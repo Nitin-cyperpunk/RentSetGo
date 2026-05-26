@@ -1,9 +1,13 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import type { Property } from "@/types/property";
+/** Kept for DB `slug` column (SEO/backfill); URLs use `/property/[id]` only. */
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+export function isPropertyUuid(param: string): boolean {
+  return UUID_RE.test(param.trim());
+}
 
 export function slugifySegment(value: string): string {
   return value
@@ -27,7 +31,6 @@ export function buildSlugBase(input: PropertySlugInput): string {
   return base || "property";
 }
 
-/** Unique slug for insert (or optional excludeId on rare regenerate). */
 export async function resolveUniquePropertySlug(
   db: SupabaseClient,
   input: PropertySlugInput,
@@ -50,18 +53,4 @@ export async function resolveUniquePropertySlug(
   }
 
   return `${base}-${crypto.randomUUID().replace(/-/g, "").slice(0, 8)}`;
-}
-
-export function propertyPath(slug: string): string {
-  return `/property/${slug}`;
-}
-
-export function propertyPathFromRow(
-  row: Pick<Property, "slug" | "id">,
-): string {
-  return propertyPath(row.slug ?? row.id);
-}
-
-export function isPropertyUuid(param: string): boolean {
-  return UUID_RE.test(param.trim());
 }

@@ -1,4 +1,5 @@
 import { getSupabaseForReads } from "@/lib/supabase/server-reads";
+import { buildSlugBase, isPropertyUuid } from "@/lib/property-slug";
 import { resolvePropertyIdFromParam } from "@/lib/seo";
 import type { PropertyWithImages } from "@/types/property";
 
@@ -185,37 +186,176 @@ export async function listActivePropertiesForSitemap(): Promise<SitemapPropertyE
   return (data ?? []) as SitemapPropertyEntry[];
 }
 
-/** Resolve a property by SEO slug or UUID (active listings only). */
+type FetchPropertyOptions = {
+  activeOnly?: boolean;
+};
+
+function throwIfDbUnreachable(err: { message?: string } | null): void {
+  const msg = err?.message?.toLowerCase() ?? "";
+  if (
+    msg.includes("fetch failed") ||
+    msg.includes("enotfound") ||
+    msg.includes("econnrefused") ||
+    msg.includes("network") ||
+    msg.includes("getaddrinfo")
+  ) {
+    throw new Error(
+      "Cannot reach Supabase. Check your internet connection and NEXT_PUBLIC_SUPABASE_URL in .env.local.",
+    );
+  }
+}
+
+async function fetchPropertyRow(
+  match: { column: "id" | "slug"; value: string },
+  options?: FetchPropertyOptions,
+): Promise<PropertyWithImages | null> {
+  const supabase = await getSupabaseForReads();
+  const value = match.value.trim();
+  const nowIso = new Date().toISOString();
+
+  let query = supabase.from("properties").select(propertySelect).eq(match.column, value);
+  if (options?.activeOnly) {
+    query = query.gt("expires_at", nowIso);
+  }
+
+  const { data, error } = await query.limit(1);
+  const embedded = data?.[0];
+  if (!error && embedded) {
+    return embedded as PropertyWithImages;
+  }
+
+  if (error) {
+    throwIfDbUnreachable(error);
+    console.error(`[fetchPropertyRow] embed failed (${match.column}=${value}):`, error);
+  }
+
+  let flatQuery = supabase.from("properties").select("*").eq(match.column, value);
+  if (options?.activeOnly) {
+    flatQuery = flatQuery.gt("expires_at", nowIso);
+  }
+
+  const { data: flatRows, error: flatErr } = await flatQuery.limit(1);
+  if (flatErr) {
+    throwIfDbUnreachable(flatErr);
+    console.error(`[fetchPropertyRow] flat failed (${match.column}=${value}):`, flatErr);
+    return null;
+  }
+
+  const flat = flatRows?.[0];
+  if (!flat) return null;
+
+  return { ...flat, property_images: null } as PropertyWithImages;
+}
+
+async function findPropertyByDerivedSlug(
+  param: string,
+  options?: FetchPropertyOptions,
+): Promise<PropertyWithImages | null> {
+  const supabase = await getSupabaseForReads();
+  const nowIso = new Date().toISOString();
+  let query = supabase.from("properties").select(propertySelect);
+  if (options?.activeOnly) {
+    query = query.gt("expires_at", nowIso);
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    throwIfDbUnreachable(error);
+    console.error("[findPropertyByDerivedSlug]", error);
+    return null;
+  }
+  if (!data?.length) return null;
+
+  const trimmed = param.trim().toLowerCase();
+  return (
+    (data as PropertyWithImages[]).find((row) => {
+      const dbSlug = row.slug?.trim().toLowerCase();
+      if (dbSlug === trimmed) return true;
+      return (
+        buildSlugBase({
+          title: row.title,
+          location: row.location,
+          property_type: row.property_type,
+        }) === trimmed
+      );
+    }) ?? null
+  );
+}
+
+export async function getPropertyById(id: string): Promise<PropertyWithImages | null> {
+  return fetchPropertyRow({ column: "id", value: id });
+}
+
+export async function getPropertyBySlug(
+  slug: string,
+  options?: FetchPropertyOptions,
+): Promise<PropertyWithImages | null> {
+  return fetchPropertyRow({ column: "slug", value: slug }, options);
+}
+
+function isExpired(property: { expires_at: string }): boolean {
+  return property.expires_at <= new Date().toISOString();
+}
+
+function allowViewer(
+  property: PropertyWithImages,
+  viewerId: string | null | undefined,
+): PropertyWithImages | null {
+  if (isExpired(property) && property.owner_id !== viewerId) return null;
+  return property;
+}
+
+/** Detail page: DB slug, derived slug, UUID, or legacy SEO URL with id suffix. */
+export async function getPropertyDetailByParam(
+  param: string,
+  options?: { activeOnly?: boolean; viewerId?: string | null },
+): Promise<PropertyWithImages | null> {
+  const trimmed = param.trim();
+  const activeOnly = options?.activeOnly ?? false;
+  const viewerId = options?.viewerId ?? null;
+
+  if (isPropertyUuid(trimmed)) {
+    const row = await getPropertyById(trimmed);
+    return row ? allowViewer(row, viewerId) : null;
+  }
+
+  let row = await getPropertyBySlug(trimmed, { activeOnly });
+  if (row) return allowViewer(row, viewerId);
+
+  row = await findPropertyByDerivedSlug(trimmed, { activeOnly });
+  if (row) return allowViewer(row, viewerId);
+
+  const resolved = resolvePropertyIdFromParam(trimmed);
+  if (resolved.mode === "uuid") {
+    row = await getPropertyById(resolved.value);
+    return row ? allowViewer(row, viewerId) : null;
+  }
+
+  if (resolved.mode === "prefix") {
+    const supabase = await getSupabaseForReads();
+    const nowIso = new Date().toISOString();
+    let query = supabase.from("properties").select(propertySelect);
+    if (activeOnly) query = query.gt("expires_at", nowIso);
+
+    const { data, error } = await query;
+    if (error) {
+      throwIfDbUnreachable(error);
+      return null;
+    }
+
+    row =
+      (data as PropertyWithImages[] | null)?.find((r) =>
+        r.id.replace(/-/g, "").toLowerCase().startsWith(resolved.value),
+      ) ?? null;
+    return row ? allowViewer(row, viewerId) : null;
+  }
+
+  return null;
+}
+
+/** Active listings only (browse / metadata). */
 export async function getActivePropertyByParam(
   param: string,
 ): Promise<PropertyWithImages | null> {
-  const resolved = resolvePropertyIdFromParam(param);
-  if (resolved.mode === "invalid") return null;
-
-  const supabase = await getSupabaseForReads();
-  const nowIso = new Date().toISOString();
-
-  if (resolved.mode === "uuid") {
-    const { data, error } = await supabase
-      .from("properties")
-      .select(propertySelect)
-      .eq("id", resolved.value)
-      .gt("expires_at", nowIso)
-      .maybeSingle();
-    if (error || !data) return null;
-    return data as PropertyWithImages;
-  }
-
-  const { data, error } = await supabase
-    .from("properties")
-    .select(propertySelect)
-    .gt("expires_at", nowIso);
-
-  if (error || !data?.length) return null;
-
-  const prefix = resolved.value;
-  const match = (data as PropertyWithImages[]).find((row) =>
-    row.id.replace(/-/g, "").toLowerCase().startsWith(prefix),
-  );
-  return match ?? null;
+  return getPropertyDetailByParam(param, { activeOnly: true });
 }

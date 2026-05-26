@@ -6,7 +6,6 @@ import { PropertyCardCarousel } from "@/components/PropertyCardCarousel";
 import { resolveOwnerId } from "@/lib/dev-owner";
 import { createClient } from "@/lib/supabase/server";
 import { listMyProperties } from "@/lib/queries/properties";
-import { propertyPathFromRow } from "@/lib/property-slug";
 import { allImageUrls } from "@/types/property";
 
 export const metadata = {
@@ -125,7 +124,7 @@ export default async function MyPropertiesPage() {
                   <div className="relative">
                     <PropertyCardCarousel
                       urls={urls}
-                      detailHref={propertyPathFromRow(p)}
+                      detailHref={`/property/${p.id}`}
                       sizes="(max-width:640px) 100vw, 50vw"
                       aspectClass="aspect-[16/10]"
                     />
@@ -155,7 +154,7 @@ export default async function MyPropertiesPage() {
                     </p>
                     <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-zinc-100 pt-4 dark:border-zinc-700">
                       <Link
-                        href={propertyPathFromRow(p)}
+                        href={`/property/${p.id}`}
                         className="text-sm font-medium text-zinc-700 underline-offset-4 hover:text-zinc-900 hover:underline dark:text-zinc-300 dark:hover:text-white"
                       >
                         View

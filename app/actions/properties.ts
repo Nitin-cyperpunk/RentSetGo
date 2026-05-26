@@ -4,14 +4,11 @@ import { revalidatePath } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { parseDealType, parseListingCategory } from "@/lib/listing";
-import {
-  propertyPath,
-  propertyPathFromRow,
-  resolveUniquePropertySlug,
-} from "@/lib/property-slug";
+import { resolveUniquePropertySlug } from "@/lib/property-slug";
 import { ensureProfileIfMissing } from "@/lib/auth/profile";
 import { resolveOwnerId } from "@/lib/dev-owner";
 import { createClient } from "@/lib/supabase/server";
+import { getPropertyById } from "@/lib/queries/properties";
 import { getSupabaseForReads } from "@/lib/supabase/server-reads";
 import { getListingBucketId } from "@/lib/supabase/bucket";
 import type { PropertyWithImages } from "@/types/property";
@@ -41,15 +38,9 @@ async function getClientsForOwnerAction() {
 }
 
 async function revalidateListingPaths(propertyId: string) {
-  const row = await getPropertyById(propertyId);
-  if (row?.slug) {
-    await revalidatePropertyPaths(row.slug);
-  } else {
-    revalidatePath("/");
-    revalidatePath("/owner/my-properties");
-    revalidatePath("/owner/dashboard");
-    if (row) revalidatePath(propertyPathFromRow(row));
-  }
+  revalidatePath("/");
+  revalidatePath("/owner/my-properties");
+  revalidatePath("/owner/dashboard");
   revalidatePath(`/property/${propertyId}`);
 }
 
@@ -113,13 +104,6 @@ function parseAmenities(formData: FormData): string[] {
     .getAll("amenities")
     .map((a) => String(a).trim())
     .filter(Boolean);
-}
-
-async function revalidatePropertyPaths(slug: string) {
-  revalidatePath("/");
-  revalidatePath("/owner/my-properties");
-  revalidatePath("/owner/dashboard");
-  revalidatePath(propertyPath(slug));
 }
 
 function parseOptionalText(formData: FormData, key: string): string | null {
@@ -283,8 +267,8 @@ export async function submitListing(formData: FormData) {
     }
   }
 
-  await revalidatePropertyPaths(inserted.slug ?? slug);
-  return { ok: true as const, propertyId, slug: inserted.slug ?? slug };
+  await revalidateListingPaths(propertyId);
+  return { ok: true as const, propertyId };
 }
 
 export async function updateListing(propertyId: string, formData: FormData) {
@@ -408,7 +392,7 @@ export async function updateListing(propertyId: string, formData: FormData) {
     }
   }
 
-  await revalidatePropertyPaths(existing.data.slug);
+  await revalidateListingPaths(propertyId);
   return { ok: true as const };
 }
 
@@ -431,45 +415,41 @@ export async function deleteProperty(id: string) {
   return { ok: true };
 }
 
-export async function getPropertyById(id: string): Promise<PropertyWithImages | null> {
-  const supabase = await getSupabaseForReads();
-  const { data, error } = await supabase
-    .from("properties")
-    .select(propertySelect)
-    .eq("id", id)
-    .maybeSingle();
-
-  if (error || !data) {
-    return null;
-  }
-  return data as PropertyWithImages;
-}
-
-/** Public detail page: lookup by stable slug (active listings only). */
-export async function getPropertyBySlug(slug: string): Promise<PropertyWithImages | null> {
-  const supabase = await getSupabaseForReads();
-  const nowIso = new Date().toISOString();
-  const { data, error } = await supabase
-    .from("properties")
-    .select(propertySelect)
-    .eq("slug", slug.trim())
-    .gt("expires_at", nowIso)
-    .maybeSingle();
-
-  if (error || !data) {
-    return null;
-  }
-  return data as PropertyWithImages;
-}
-
 export async function getPropertyForOwner(id: string): Promise<PropertyWithImages | null> {
   const supabase = await createClient();
   const ownerId = await resolveOwnerId(supabase);
   if (!ownerId) return null;
 
-  const row = await getPropertyById(id);
-  if (!row || row.owner_id !== ownerId) return null;
-  return row;
+  const { data, error } = await supabase
+    .from("properties")
+    .select(propertySelect)
+    .eq("id", id)
+    .eq("owner_id", ownerId)
+    .maybeSingle();
+
+  if (!error && data) {
+    return data as PropertyWithImages;
+  }
+
+  if (error) {
+    console.error("[getPropertyForOwner] select with property_images failed:", error);
+  }
+
+  const { data: flat, error: flatErr } = await supabase
+    .from("properties")
+    .select("*")
+    .eq("id", id)
+    .eq("owner_id", ownerId)
+    .maybeSingle();
+
+  if (flatErr || !flat) {
+    return null;
+  }
+
+  return {
+    ...flat,
+    property_images: null,
+  } as PropertyWithImages;
 }
 
 /** Extend listing expiry by 30 days (owner only). */
@@ -509,7 +489,7 @@ export async function extendListingExpiry(propertyId: string) {
     return { error: dbErrorMessage(upErr) };
   }
 
-  if (listing.slug) await revalidatePropertyPaths(listing.slug);
+  await revalidateListingPaths(propertyId);
   return { ok: true as const, expires_at: next.toISOString() };
 }
 
@@ -534,13 +514,6 @@ export async function setListingAvailability(propertyId: string, status: "availa
     return { error: dbErrorMessage(error) };
   }
 
-  const { data: row } = await db
-    .from("properties")
-    .select("slug")
-    .eq("id", propertyId)
-    .maybeSingle();
-  revalidatePath("/");
-  revalidatePath("/owner/my-properties");
-  if (row?.slug) await revalidatePropertyPaths(row.slug);
+  await revalidateListingPaths(propertyId);
   return { ok: true as const };
 }
