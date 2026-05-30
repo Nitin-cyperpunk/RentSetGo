@@ -1,6 +1,9 @@
 export const BRAND_FAVICON = "/favicon.ico";
 export const BRAND_NAME = "RentSetGo";
 
+/** Footer wordmark — `public/brand/fotter logo.png` */
+export const BRAND_FOOTER_LOGO = "/brand/fotter logo.png";
+
 /** Razorpay checkout logo (favicon on white background). */
 export function getBrandLogoAbsoluteUrl(): string {
   const base =

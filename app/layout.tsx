@@ -94,8 +94,8 @@ export const metadata: Metadata = {
     images: [ogImageUrl(OG_IMAGE_PATH)],
   },
   icons: {
-    icon: [{ url: "/icon", type: "image/png" }],
-    apple: [{ url: "/apple-icon", type: "image/png" }],
+    icon: [{ url: "/favicon.ico", sizes: "any" }],
+    apple: [{ url: "/brand/logo-light.png", type: "image/png" }],
   },
   verification: {
     google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,

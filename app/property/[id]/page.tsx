@@ -3,11 +3,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { ListingBadges } from "@/components/ListingBadges";
+import { PropertyDetailLoginGate } from "@/components/PropertyDetailLoginGate";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { PropertyImageGallery } from "@/components/PropertyImageGallery";
 import { PropertyOwnerContact } from "@/components/PropertyOwnerContact";
 import { parseDealType, priceSuffix } from "@/lib/listing";
 import { getPropertyById } from "@/lib/queries/properties";
+import { createClient } from "@/lib/supabase/server";
 import {
   breadcrumbJsonLd,
   buildPropertyMetadata,
@@ -45,8 +47,28 @@ function formatPriceInr(amount: number) {
 
 export default async function PropertyDetailPage({ params }: PageProps) {
   const { id } = await params;
+
   const property = await getPropertyById(id);
   if (!property) notFound();
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return (
+      <PropertyDetailLoginGate
+        propertyId={property.id}
+        title={property.title}
+        propertyType={property.property_type}
+        location={property.location}
+        formattedPrice={formatPriceInr(property.price)}
+        dealType={property.deal_type}
+        category={property.category}
+      />
+    );
+  }
 
   const images = galleryImages(property);
   const dealType = parseDealType(property.deal_type);

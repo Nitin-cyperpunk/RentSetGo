@@ -1,5 +1,15 @@
+import Image from "next/image";
 import Link from "next/link";
-import { Building2, Heart, Home, KeyRound, LayoutDashboard, LogIn, Sparkles } from "lucide-react";
+import {
+  Building2,
+  Heart,
+  Home,
+  KeyRound,
+  LayoutDashboard,
+  LogIn,
+} from "lucide-react";
+
+import { BRAND_FOOTER_LOGO, BRAND_NAME } from "@/lib/brand";
 
 export function SiteFooter() {
   return (
@@ -7,16 +17,25 @@ export function SiteFooter() {
       <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-9">
         <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 md:grid-cols-3 md:gap-12">
           <div className="md:max-w-sm">
-            <div className="flex items-center gap-2">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white shadow-md shadow-emerald-900/15">
-                <Sparkles className="size-4" strokeWidth={2.25} aria-hidden />
+            <Link
+              href="/"
+              className="flex w-fit items-center gap-1 transition opacity-90 hover:opacity-100"
+            >
+              <Image
+                src={BRAND_FOOTER_LOGO}
+                alt=""
+                width={200}
+                height={64}
+                className="h-12 w-auto max-w-48 object-contain sm:h-14"
+                priority={false}
+              />
+              <span className="bg-gradient-to-br from-emerald-700 via-teal-700 to-zinc-800 bg-clip-text text-xl font-bold tracking-tight text-transparent dark:from-emerald-300 dark:via-teal-300 dark:to-zinc-100 sm:text-2xl">
+                {BRAND_NAME}
               </span>
-              <span className="bg-gradient-to-br from-emerald-700 via-teal-700 to-zinc-800 bg-clip-text text-lg font-bold tracking-tight text-transparent dark:from-emerald-300 dark:via-teal-300 dark:to-zinc-100">
-                RentSetGo
-              </span>
-            </div>
+            </Link>
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-              Flats and rooms in Nashik—filter by area and budget, then reach owners directly.
+              Flats and rooms in Nashik—filter by area and budget, then reach
+              owners directly.
             </p>
             <p className="mt-4 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
               <Heart className="size-3.5 text-rose-500/80" aria-hidden />
@@ -24,7 +43,10 @@ export function SiteFooter() {
             </p>
             <p className="mt-3 text-xs text-muted-foreground">
               Like RentSetGo?{" "}
-              <Link href="/support" className="font-medium text-rose-600 hover:underline dark:text-rose-400">
+              <Link
+                href="/support"
+                className="font-medium text-rose-600 hover:underline dark:text-rose-400"
+              >
                 Support the project
               </Link>
             </p>
@@ -58,7 +80,10 @@ export function SiteFooter() {
                   href="/signup"
                   className="inline-flex items-center gap-2 text-foreground/80 transition hover:text-emerald-700 dark:hover:text-emerald-400"
                 >
-                  <KeyRound className="size-4 shrink-0 opacity-60" aria-hidden />
+                  <KeyRound
+                    className="size-4 shrink-0 opacity-60"
+                    aria-hidden
+                  />
                   Sign up
                 </Link>
               </li>
@@ -75,7 +100,10 @@ export function SiteFooter() {
                   href="/owner/dashboard"
                   className="inline-flex items-center gap-2 text-foreground/80 transition hover:text-emerald-700 dark:hover:text-emerald-400"
                 >
-                  <LayoutDashboard className="size-4 shrink-0 opacity-60" aria-hidden />
+                  <LayoutDashboard
+                    className="size-4 shrink-0 opacity-60"
+                    aria-hidden
+                  />
                   Dashboard
                 </Link>
               </li>
@@ -84,7 +112,10 @@ export function SiteFooter() {
                   href="/owner/add-property"
                   className="inline-flex items-center gap-2 text-foreground/80 transition hover:text-emerald-700 dark:hover:text-emerald-400"
                 >
-                  <Building2 className="size-4 shrink-0 opacity-60" aria-hidden />
+                  <Building2
+                    className="size-4 shrink-0 opacity-60"
+                    aria-hidden
+                  />
                   Add a listing
                 </Link>
               </li>
@@ -100,16 +131,28 @@ export function SiteFooter() {
             className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-muted-foreground sm:justify-end"
             aria-label="Footer"
           >
-            <Link href="/forgot-password" className="transition hover:text-emerald-700 dark:hover:text-emerald-400">
+            <Link
+              href="/forgot-password"
+              className="transition hover:text-emerald-700 dark:hover:text-emerald-400"
+            >
               Forgot password
             </Link>
-            <Link href="/#faq" className="transition hover:text-emerald-700 dark:hover:text-emerald-400">
+            <Link
+              href="/#faq"
+              className="transition hover:text-emerald-700 dark:hover:text-emerald-400"
+            >
               FAQ
             </Link>
-            <Link href="/support" className="transition hover:text-emerald-700 dark:hover:text-emerald-400">
+            <Link
+              href="/support"
+              className="transition hover:text-emerald-700 dark:hover:text-emerald-400"
+            >
               Support
             </Link>
-            <Link href="#browse" className="transition hover:text-emerald-700 dark:hover:text-emerald-400">
+            <Link
+              href="#browse"
+              className="transition hover:text-emerald-700 dark:hover:text-emerald-400"
+            >
               Search
             </Link>
           </nav>

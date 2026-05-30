@@ -50,9 +50,15 @@ export function PropertyCardInteractive({
         <div className="flex flex-1 flex-col gap-2 p-4">
           <div className="flex items-start justify-between gap-2">
             <h2 className="line-clamp-2 text-[15px] font-medium leading-snug text-zinc-900 dark:text-zinc-100">
-              <Link href={detailPath} className={titleLinkClass}>
-                {property.title}
-              </Link>
+              {isLoggedIn ? (
+                <Link href={detailPath} className={titleLinkClass}>
+                  {property.title}
+                </Link>
+              ) : (
+                <button type="button" onClick={onRequireLogin} className={`text-left ${titleLinkClass}`}>
+                  {property.title}
+                </button>
+              )}
             </h2>
             <p className="shrink-0 text-[15px] font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">
               {formattedRent}
@@ -76,9 +82,15 @@ export function PropertyCardInteractive({
               {property.location}
             </p>
           ) : null}
-          <Link href={detailPath} className={viewDetailsClass}>
-            View details
-          </Link>
+          {isLoggedIn ? (
+            <Link href={detailPath} className={viewDetailsClass}>
+              View details
+            </Link>
+          ) : (
+            <button type="button" onClick={onRequireLogin} className={viewDetailsClass}>
+              View details
+            </button>
+          )}
         </div>
       </article>
 
@@ -86,6 +98,8 @@ export function PropertyCardInteractive({
         open={showLoginModal}
         onClose={() => setShowLoginModal(false)}
         loginHref={loginHref}
+        listingTitle={property.title}
+        nextPath={detailPath}
       />
     </>
   );

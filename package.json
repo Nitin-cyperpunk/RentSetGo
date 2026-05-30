@@ -2,7 +2,7 @@
   "name": "rentsetgo",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "pnpm@11.3.0",
+  "packageManager": "pnpm@11.5.0",
   "scripts": {
     "sync:qr": "node scripts/sync-qr.mjs",
     "sync:brand": "node scripts/sync-brand.mjs",
